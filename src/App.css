@@ -1,0 +1,8 @@
+:root {
+	background: #282828;
+	color: #ebdbb2;
+}
+
+* {
+	outline: solid red 1px;
+}
