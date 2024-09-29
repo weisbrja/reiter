@@ -14,7 +14,10 @@
       {
         "title": "sattel",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "minWidth": 300,
+        "minHeight": 300,
+        "visible": false
       }
     ],
     "security": {
@@ -22,6 +25,11 @@
     }
   },
   "bundle": {
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    },
     "active": true,
     "targets": "all",
     "icon": [
