@@ -1,3 +1,3 @@
-# sattel
+# reite
 
-sattel is a simple gui for [pferd](https://github.com/Garmelon/PFERD/).
+reiter is a simple gui for [pferd](https://github.com/Garmelon/PFERD/).

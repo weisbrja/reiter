@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0.0-rc",
-  "productName": "sattel",
+  "productName": "reiter",
   "version": "0.1.0",
-  "identifier": "com.sattel.app",
+  "identifier": "reiter",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "sattel",
+        "title": "reiter",
         "width": 800,
         "height": 600,
         "minWidth": 300,
@@ -26,6 +26,9 @@
   },
   "bundle": {
     "active": true,
+    "resources": [
+      "../../sattel/dist/sattel"
+    ],
     "targets": [
       "deb",
       "rpm",
