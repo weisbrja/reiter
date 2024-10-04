@@ -77,6 +77,8 @@ async fn run_sattel(
     let stdout = child.stdout.unwrap();
     let reader = BufReader::new(stdout);
 
+    let mut advance_count = 0;
+
     for line in reader.lines() {
         let line = line.unwrap();
         let message: SattelMessage =
@@ -85,8 +87,25 @@ async fn run_sattel(
             SattelMessage::Error(error) => return Err(error),
             SattelMessage::LoginFailed => app_handle.emit("loginFailed", ()),
             SattelMessage::Crawl { crawler } => app_handle.emit("crawl", crawler),
-            SattelMessage::DownloadBar(msg) => app_handle.emit("downloadBar", msg),
-            SattelMessage::CrawlBar(msg) => app_handle.emit("crawlBar", msg),
+            SattelMessage::DownloadBar(msg) => {
+                if let ProgressBarMessage {
+                    event: ProgressBarEvent::Advance { .. },
+                    ..
+                } = msg
+                {
+                    advance_count += 1;
+                    if advance_count == 1000 {
+                        advance_count = 0;
+                        app_handle.emit("downloadBar", msg)
+                    } else {
+                        Ok(())
+                    }
+                } else {
+                    app_handle.emit("downloadBar", msg)
+                }
+            }
+            SattelMessage::CrawlBar(_) => continue,
+            // SattelMessage::CrawlBar(msg) => app_handle.emit("crawlBar", msg),
             SattelMessage::Request { subject } => app_handle.emit("request", subject),
         }
         .unwrap();
