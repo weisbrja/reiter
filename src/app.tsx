@@ -114,13 +114,34 @@ export function ProgressBars() {
 		<div class="p-4">
 			<div tabIndex={0} class="collapse collapse-arrow bg-base-300 mb-2">
 				<input type="checkbox" class="peer" />
-				<div class="collapse-title checked: text-xl font-bold">Finished downloads</div>
+				<div class="collapse-title checked: text-xl font-medium">Finished downloads</div>
 				<div
 					class="collapse-content">
 					{finishedProgressBars}
 				</div>
 			</div>
 			{runningProgressBars}
+		</div>
+	);
+}
+
+function ProgressBar({ progress, total, path }: ProgressBar) {
+	return (
+		<div class="mb-4">
+			{total === null
+				? <progress class="progress progress-primary"></progress>
+				: <progress class="progress progress-primary" value={progress} max={total}></progress>
+			}
+			<ProgressBarText progress={progress} total={total} path={path} />
+		</div >
+	);
+}
+
+function FinishedProgressBar({ progress, total, path }: ProgressBar) {
+	return (
+		<div class="mb-4">
+			<progress class="progress progress-success" value="100" max="100"></progress>
+			<ProgressBarText progress={progress} total={total} path={path} />
 		</div>
 	);
 }
@@ -132,29 +153,19 @@ function formatBytes(bytes: number) {
 	return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-function ProgressBar({ progress, total, path }: ProgressBar) {
+function ProgressBarText({ progress, total, path }: ProgressBar) {
 	return (
-		<div class="mb-4">
-			{total === null
-				? <progress class="progress progress-primary"></progress>
-				: <progress class="progress progress-primary" value={progress} max={total}></progress>
-			}
-			<span>{path}</span>
-			<Size size={progress} />
-		</div >
-	);
-}
-
-function FinishedProgressBar({ progress, path }: ProgressBar) {
-	return (
-		<div class="mb-4">
-			<progress class="progress progress-success" value="100" max="100"></progress>
-			<span>{path}</span>
-			<Size size={progress} />
+		<div class="flex">
+			<div class="flex-1">
+				<span class="">{path}</span>
+			</div>
+			<div class="text-right">
+				<span class="ml-4 font-bold">{formatBytes(progress)}</span>
+				{total !== null && <>
+					<span> / </span>
+					<span class="font-bold">{formatBytes(total)}</span>
+				</>}
+			</div>
 		</div>
 	);
-}
-
-function Size({ size }: { size: number }) {
-	return <span class="ml-4 font-bold">{formatBytes(size)}</span>;
 }
