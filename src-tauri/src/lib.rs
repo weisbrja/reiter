@@ -17,7 +17,7 @@ use tauri::{Emitter, Manager};
 enum SattelMsg {
     Error(SattelError),
     LoginFailed,
-    Crawler { crawler: String },
+    Crawl { name: String },
     ProgressBar(ProgressBarMsgPayload),
     Request { subject: RequestSubject },
     Info { info: String },
@@ -100,7 +100,7 @@ async fn run_sattel(
     let cancel_unlisten = app.listen("cancel", move |_event| {
         let cancel_tx_clone = cancel_tx.clone();
         tauri::async_runtime::spawn(async move {
-            cancel_tx_clone.send(()).await.unwrap();
+            let _ = cancel_tx_clone.send(()).await;
         });
     });
 
@@ -111,10 +111,7 @@ async fn run_sattel(
 
     loop {
         tokio::select! {
-            Some(()) = cancel_rx.recv() => {
-                child.kill().await.unwrap();
-                break;
-            }
+            Some(()) = cancel_rx.recv() => break,
             Some(response) = child_stdin_rx.recv() => {
                 stdin.write_all(response.as_bytes()).await.unwrap();
                 stdin.write(b"\n").await.unwrap();
@@ -126,7 +123,7 @@ async fn run_sattel(
                 match message {
                     SattelMsg::Error(error) => return Err(error),
                     SattelMsg::LoginFailed => app.emit("loginFailed", ()).unwrap(),
-                    SattelMsg::Crawler { crawler } => app.emit("crawl", crawler).unwrap(),
+                    SattelMsg::Crawl { name } => app.emit("crawl", name).unwrap(),
                     SattelMsg::ProgressBar(ref payload @ ProgressBarMsgPayload { ref event, .. }) => {
                         if let ProgressBarEvent::Advance { .. } = event {
                             advance_count += 1;
@@ -139,7 +136,7 @@ async fn run_sattel(
                         }
                     }
                     SattelMsg::Request { subject } => app.emit("request", subject).unwrap(),
-                    SattelMsg::Info { info } => println!("sattel: {}", info),
+                    SattelMsg::Info { .. } => (), // println!("sattel: {}", info),
                 }
             }
         }
@@ -147,7 +144,8 @@ async fn run_sattel(
 
     app.unlisten(response_unlisten);
     app.unlisten(cancel_unlisten);
-    println!("killed child");
+    child.kill().await.unwrap();
+    child.wait().await.unwrap();
 
     Ok(())
 }

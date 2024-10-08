@@ -11,12 +11,12 @@ type ProgressBarEvent =
 	| { kind: "setTotal"; total: number }
 	| { kind: "done" };
 
-export interface ProgressBarMsg {
+interface ProgressBarMsg {
 	id: number;
 	event: ProgressBarEvent;
 }
 
-export interface ProgressBar {
+interface ProgressBar {
 	bar: ProgressBarKind,
 	progress: number,
 	total: number | null,
@@ -41,16 +41,9 @@ export function ProgressBarChannelContextProvider({ children }: { children: Reac
 }
 
 export function ProgressBars() {
-	const progressBarEvent = useContext(ProgressBarChannelContext);
+	const progressBarEvent = useProgressBarChannelContext();
 	const [finished, setFinished] = useState<Map<number, ProgressBar>>(new Map());
 	const [running, setRunning] = useState<Map<number, ProgressBar>>(new Map());
-
-	useEffect(() => {
-		return () => {
-			setRunning(new Map());
-			setFinished(new Map());
-		};
-	}, []);
 
 	useEffect(() => {
 		progressBarEvent.onmessage = message => {
@@ -101,14 +94,19 @@ export function ProgressBars() {
 					break;
 			}
 		};
+
+		return () => {
+			setRunning(new Map());
+			setFinished(new Map());
+		};
 	}, []);
 
-	const runningProgressBars = Array.from(running.entries()).map(([id, { bar, progress, total, path }]) => (
-		<RunningProgressBar key={id} bar={bar} progress={progress} total={total} path={path} />
+	const runningProgressBars = Array.from(running.entries()).map(([id, props]) => (
+		<RunningProgressBar key={id} {...props} />
 	));
 
-	const finishedDownloadBars = Array.from(finished.entries()).map(([id, { progress, total, path }]) => (
-		<FinishedDownloadBar key={id} progress={progress} total={total} path={path} />
+	const finishedDownloadBars = Array.from(finished.entries()).map(([id, props]) => (
+		<FinishedDownloadBar key={id} {...props} />
 	));
 
 	return <>
@@ -124,12 +122,12 @@ export function ProgressBars() {
 	</>;
 }
 
-export function RunningProgressBar({ bar, progress, total, path }: ProgressBar) {
+export function RunningProgressBar(props: ProgressBar) {
 	return (
 		<div class="mb-4">
-			{bar == "crawl"
-				? <CrawlBar path={path} />
-				: <DownloadBar progress={progress} total={total} path={path} />
+			{props.bar == "crawl"
+				? <CrawlBar path={props.path} />
+				: <DownloadBar {...props} />
 			}
 		</div >
 	);
@@ -162,21 +160,21 @@ function CrawlBarText({ path }: CrawlBarProps) {
 
 type DownloadBarProps = { progress: number, total: number | null, path: string };
 
-function DownloadBar({ progress, total, path }: DownloadBarProps) {
+function DownloadBar(props: DownloadBarProps) {
 	return <>
-		{total === null
+		{props.total === null
 			? <progress class="progress progress-primary"></progress>
-			: <progress class="progress progress-primary" value={progress} max={total}></progress>
+			: <progress class="progress progress-primary" value={props.progress} max={props.total}></progress>
 		}
-		<DownloadBarText progress={progress} total={total} path={path} />
+		<DownloadBarText {...props} />
 	</>;
 }
 
-export function FinishedDownloadBar({ progress, total, path }: DownloadBarProps) {
+export function FinishedDownloadBar(props: DownloadBarProps) {
 	return (
 		<div class="mb-4">
 			<progress class="progress progress-success" value="100" max="100"></progress>
-			<DownloadBarText progress={progress} total={total} path={path} />
+			<DownloadBarText {...props} />
 		</div>
 	);
 }
