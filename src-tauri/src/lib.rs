@@ -1,22 +1,26 @@
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 
-use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
-use std::process::{Command, Stdio};
-use std::sync::Mutex;
+use std::process::Stdio;
+use std::sync::RwLock;
+use tauri::ipc::Channel;
+use tauri::Listener;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::process::Command;
+use tokio::sync::mpsc;
 
 use tauri::{Emitter, Manager};
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(tag = "kind")]
 #[serde(rename_all = "camelCase")]
-enum SattelMessage {
+enum SattelMsg {
     Error(SattelError),
     LoginFailed,
-    Crawl { crawler: String },
-    DownloadBar(ProgressBarMessage),
-    CrawlBar(ProgressBarMessage),
+    Crawler { crawler: String },
+    ProgressBar(ProgressBarMsgPayload),
     Request { subject: RequestSubject },
+    Info { info: String },
 }
 
 #[derive(Debug, thiserror::Error, serde::Serialize, serde::Deserialize)]
@@ -32,11 +36,12 @@ struct SattelError {
 enum RequestSubject {
     Password,
     Username,
+    JsonArgs,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ProgressBarMessage {
+struct ProgressBarMsgPayload {
     id: u32,
     event: ProgressBarEvent,
 }
@@ -45,72 +50,104 @@ struct ProgressBarMessage {
 #[serde(tag = "kind")]
 #[serde(rename_all = "camelCase")]
 enum ProgressBarEvent {
-    Begin { path: String },
+    Begin { bar: ProgressBarKind, path: String },
     Advance { progress: u32 },
     SetTotal { total: u32 },
     Done,
 }
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+enum ProgressBarKind {
+    Download,
+    Crawl,
+}
+
 struct AppState {
-    sattel_path: Mutex<Option<Box<Path>>>,
+    sattel_path: RwLock<Option<Box<Path>>>,
 }
 
 #[tauri::command]
 async fn run_sattel(
-    json_args: String,
     state: tauri::State<'_, AppState>,
-    app_handle: tauri::AppHandle,
+    app: tauri::AppHandle,
+    progress_bar_event: Channel<ProgressBarMsgPayload>,
 ) -> Result<(), SattelError> {
     // let config_dir = app_handle.path().config_dir();
 
-    let sattel_guard = state.sattel_path.lock().unwrap();
-    let sattel_path = sattel_guard.as_ref().unwrap();
-    let child = Command::new(&**sattel_path)
+    let sattel_path = state.sattel_path.read().unwrap().clone().unwrap();
+
+    let mut child = Command::new(&*sattel_path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
 
-    let mut stdin = child.stdin.unwrap();
-    writeln!(stdin, "{}", json_args).unwrap();
+    let mut stdin = child.stdin.take().unwrap();
+    let stdout = child.stdout.take().unwrap();
 
-    let stdout = child.stdout.unwrap();
+    let (child_stdin_tx, mut child_stdin_rx) = mpsc::channel(100);
+    let response_unlisten = app.listen("response", move |event| {
+        let response: String =
+            serde_json::from_str(event.payload()).expect("invalid json message from frontend");
+        let child_stdin_tx_clone = child_stdin_tx.clone();
+        tauri::async_runtime::spawn(async move {
+            child_stdin_tx_clone.send(response).await.unwrap();
+        });
+    });
+
+    let (cancel_tx, mut cancel_rx) = mpsc::channel(1);
+    let cancel_unlisten = app.listen("cancel", move |_event| {
+        let cancel_tx_clone = cancel_tx.clone();
+        tauri::async_runtime::spawn(async move {
+            cancel_tx_clone.send(()).await.unwrap();
+        });
+    });
+
     let reader = BufReader::new(stdout);
+    let mut lines = reader.lines();
 
-    let mut advance_count = 0;
+    let mut advance_count = 0u8;
 
-    for line in reader.lines() {
-        let line = line.unwrap();
-        let message: SattelMessage =
-            serde_json::from_str(&line).expect("invalid json message from sattel");
-        match message {
-            SattelMessage::Error(error) => return Err(error),
-            SattelMessage::LoginFailed => app_handle.emit("loginFailed", ()),
-            SattelMessage::Crawl { crawler } => app_handle.emit("crawl", crawler),
-            SattelMessage::DownloadBar(msg) => {
-                if let ProgressBarMessage {
-                    event: ProgressBarEvent::Advance { .. },
-                    ..
-                } = msg
-                {
-                    advance_count += 1;
-                    if advance_count == 1000 {
-                        advance_count = 0;
-                        app_handle.emit("downloadBar", msg)
-                    } else {
-                        Ok(())
+    loop {
+        tokio::select! {
+            Some(()) = cancel_rx.recv() => {
+                child.kill().await.unwrap();
+                break;
+            }
+            Some(response) = child_stdin_rx.recv() => {
+                stdin.write_all(response.as_bytes()).await.unwrap();
+                stdin.write(b"\n").await.unwrap();
+                stdin.flush().await.unwrap();
+            }
+            Ok(Some(line)) = lines.next_line() => {
+                let message: SattelMsg =
+                    serde_json::from_str(&line).expect("invalid json message from sattel");
+                match message {
+                    SattelMsg::Error(error) => return Err(error),
+                    SattelMsg::LoginFailed => app.emit("loginFailed", ()).unwrap(),
+                    SattelMsg::Crawler { crawler } => app.emit("crawl", crawler).unwrap(),
+                    SattelMsg::ProgressBar(ref payload @ ProgressBarMsgPayload { ref event, .. }) => {
+                        if let ProgressBarEvent::Advance { .. } = event {
+                            advance_count += 1;
+                            if advance_count == 100 {
+                                advance_count = 0;
+                                progress_bar_event.send(payload.clone()).unwrap();
+                            }
+                        } else {
+                            progress_bar_event.send(payload.clone()).unwrap();
+                        }
                     }
-                } else {
-                    app_handle.emit("downloadBar", msg)
+                    SattelMsg::Request { subject } => app.emit("request", subject).unwrap(),
+                    SattelMsg::Info { info } => println!("sattel: {}", info),
                 }
             }
-            SattelMessage::CrawlBar(_) => continue,
-            // SattelMessage::CrawlBar(msg) => app_handle.emit("crawlBar", msg),
-            SattelMessage::Request { subject } => app_handle.emit("request", subject),
         }
-        .unwrap();
-        println!("{}", line);
     }
+
+    app.unlisten(response_unlisten);
+    app.unlisten(cancel_unlisten);
+    println!("killed child");
 
     Ok(())
 }
@@ -134,7 +171,7 @@ pub fn run() {
                     tauri::path::BaseDirectory::Resource,
                 )?
                 .into_boxed_path();
-            *app.state::<AppState>().sattel_path.lock().unwrap() = Some(sattel);
+            *app.state::<AppState>().sattel_path.write().unwrap() = Some(sattel);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![show_window, run_sattel])
