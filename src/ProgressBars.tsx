@@ -1,9 +1,7 @@
-import { useContext, useEffect, useState } from "preact/hooks";
-import { invoke, Channel } from "@tauri-apps/api/core";
-import { listen, emit } from "@tauri-apps/api/event";
+import { useContext, useState, useEffect } from "preact/hooks";
 import { createContext } from "preact";
-
-type RequestSubject = "password" | "username" | "jsonArgs";
+import { Channel } from "@tauri-apps/api/core";
+import { ReactNode } from "preact/compat";
 
 type ProgressBarKind = "download" | "crawl";
 
@@ -13,90 +11,46 @@ type ProgressBarEvent =
 	| { kind: "setTotal"; total: number }
 	| { kind: "done" };
 
-interface ProgressBarMsg {
+export interface ProgressBarMsg {
 	id: number;
 	event: ProgressBarEvent;
 }
 
-interface ProgressBar {
+export interface ProgressBar {
 	bar: ProgressBarKind,
 	progress: number,
 	total: number | null,
 	path: string,
 }
 
-const ProgressBarChannelContext = createContext<Channel<ProgressBarMsg>>(new Channel<ProgressBarMsg>());
+export const ProgressBarChannelContext = createContext<Channel<ProgressBarMsg> | undefined>(undefined);
 
-export default function SyncAll() {
-	const [progressBarEvent] = useState(new Channel<ProgressBarMsg>());
-
-	useEffect(() => {
-		const unlisten = listen<RequestSubject>("request", event => {
-			switch (event.payload) {
-				case "jsonArgs":
-					// run all crawlers
-					emit("response", "{}");
-					break;
-				case "password":
-				case "username":
-					// TODO
-					break;
-			}
-		});
-		return () => unlisten.then(unlisten => unlisten());
-	}, []);
-
-	return (
-		<ProgressBarChannelContext.Provider value={progressBarEvent}>
-			<SyncButton />
-		</ProgressBarChannelContext.Provider>
-	);
+export function useProgressBarChannelContext() {
+	const context = useContext(ProgressBarChannelContext);
+	if (context === undefined) {
+		throw new Error("useProgressBarChannelContext must be used with a ProgressBarChannelContextProvider");
+	}
+	return context;
 }
 
-export function SyncButton() {
-	const [runSattel, setRunSattel] = useState(false);
-	const progressBarEvent = useContext(ProgressBarChannelContext);
-
-	useEffect(() => {
-		if (runSattel) {
-			invoke("run_sattel", { progressBarEvent })
-				.catch(error => console.error("sattel error:", error))
-		}
-	}, [runSattel]);
-
-	return <div class="p-4">
-		{!runSattel
-			? <button class="btn btn-primary" onClick={() => setRunSattel(true)}>Sync</button>
-			: <>
-				<button class="btn btn-error mb-4" onClick={() => {
-					setRunSattel(false);
-					emit("cancel");
-				}}>Cancel</button>
-				<Crawling />
-			</>
-		}
-	</div>;
+export function ProgressBarChannelContextProvider({ children }: { children: ReactNode }) {
+	const [progressBarEvent] = useState(new Channel());
+	return <ProgressBarChannelContext.Provider value={progressBarEvent}>
+		{children}
+	</ProgressBarChannelContext.Provider>;
 }
 
-function Crawling() {
-	const [crawler, setCrawler] = useState<string>("");
-
-	useEffect(() => {
-		listen<string>("crawl", event => {
-			setCrawler(event.payload);
-		});
-	});
-
-	return <>
-		<h1 class="text-2xl font-bold">Crawling {crawler}</h1>
-		<ProgressBars />
-	</>;
-}
-
-function ProgressBars() {
+export function ProgressBars() {
 	const progressBarEvent = useContext(ProgressBarChannelContext);
 	const [finished, setFinished] = useState<Map<number, ProgressBar>>(new Map());
 	const [running, setRunning] = useState<Map<number, ProgressBar>>(new Map());
+
+	useEffect(() => {
+		return () => {
+			setRunning(new Map());
+			setFinished(new Map());
+		};
+	}, []);
 
 	useEffect(() => {
 		progressBarEvent.onmessage = message => {
@@ -158,7 +112,7 @@ function ProgressBars() {
 	));
 
 	return <>
-		<div tabIndex={0} class="collapse collapse-arrow bg-base-300 mb-2">
+		<div tabIndex={0} class="collapse collapse-arrow bg-base-300 mb-4">
 			<input type="checkbox" class="peer" />
 			<div class="collapse-title checked: text-xl font-medium">Finished downloads</div>
 			<div
@@ -170,7 +124,7 @@ function ProgressBars() {
 	</>;
 }
 
-function RunningProgressBar({ bar, progress, total, path }: ProgressBar) {
+export function RunningProgressBar({ bar, progress, total, path }: ProgressBar) {
 	return (
 		<div class="mb-4">
 			{bar == "crawl"
@@ -218,7 +172,7 @@ function DownloadBar({ progress, total, path }: DownloadBarProps) {
 	</>;
 }
 
-function FinishedDownloadBar({ progress, total, path }: DownloadBarProps) {
+export function FinishedDownloadBar({ progress, total, path }: DownloadBarProps) {
 	return (
 		<div class="mb-4">
 			<progress class="progress progress-success" value="100" max="100"></progress>
@@ -230,9 +184,9 @@ function FinishedDownloadBar({ progress, total, path }: DownloadBarProps) {
 function DownloadBarText({ progress, total, path }: DownloadBarProps) {
 	return (
 		<div class="flex justify-between">
-			<span>{path}</span>
-			<span class="font-bold">
-				{formatBytes(progress)}
+			<span class="flex-grow">{path}</span>
+			<span class="ml-4 whitespace-nowrap">
+				<span class="font-bold">{formatBytes(progress)}</span>
 				{total !== null && (<>
 					<span> / </span>
 					<span class="font-bold">{formatBytes(total)}</span>
