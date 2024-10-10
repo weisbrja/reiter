@@ -1,0 +1,3 @@
+[submodule "sattel"]
+	path = sattel
+	url = git@github.com:weisbrja/sattel.git

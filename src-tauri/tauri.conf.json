@@ -27,7 +27,8 @@
   "bundle": {
     "active": true,
     "resources": [
-      "../../sattel/dist/sattel"
+      "../sattel/dist/sattel",
+      "../sattel/sattel.cfg"
     ],
     "targets": [
       "deb",
