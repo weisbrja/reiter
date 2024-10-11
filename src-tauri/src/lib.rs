@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::sync::atomic::AtomicBool;
 use std::sync::RwLock;
 
 use tauri::path::BaseDirectory;
@@ -10,10 +11,12 @@ struct AppState {
     sattel_exe: RwLock<Option<Box<Path>>>,
     config_file: RwLock<Option<Box<Path>>>,
     config_dir: RwLock<Option<Box<Path>>>,
+    watching_config: AtomicBool,
 }
 
 #[tauri::command]
 fn show_window(window: tauri::Window) {
+    println!("showing window");
     window.show().unwrap();
 }
 
@@ -24,6 +27,7 @@ pub fn run() {
             sattel_exe: None.into(),
             config_file: None.into(),
             config_dir: None.into(),
+            watching_config: false.into(),
         })
         .setup(|app| {
             let sattel = app

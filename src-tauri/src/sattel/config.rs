@@ -1,9 +1,11 @@
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::time::Instant;
 
 use configparser::ini::Ini;
+use configparser::ini::IniDefault;
 use notify::Watcher;
 use tauri::Emitter;
 use tauri::{async_runtime, Manager};
@@ -15,6 +17,7 @@ use crate::AppState;
 struct Crawler {
     name: String,
     target: String,
+    videos: bool,
     // TODO: support all documented useful fields
     // TODO: consider defaults
     // auth: String,
@@ -30,30 +33,45 @@ pub struct Config {
 }
 
 // TODO
-// #[derive(Debug, thiserror::Error)]
-// enum Error {
-//     ConfigParseFailed(String),
-//     Missing(String)
-// }
+#[derive(Debug, thiserror::Error, serde::Serialize)]
+pub enum Error {
+    #[error("failed parsing config: {0}")]
+    FailedParsing(String),
+    #[error("config missing attribute: {0}")]
+    MissingAttr(&'static str),
+}
 
 #[tauri::command]
-pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, String> {
-    let mut config = Ini::new();
+pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, Error> {
     let config_file = state.config_file.read().unwrap();
     let config_file = config_file.as_ref().unwrap();
-    let map = config.load(config_file)?;
 
-    let crawlers = map
+    let mut defaults = IniDefault::default();
+    defaults.case_sensitive = true;
+    defaults.default_section = "DEFAULT".to_owned();
+    let mut config = Ini::new_from_defaults(defaults);
+    let map = config.load(config_file).map_err(Error::FailedParsing)?;
+
+    const CRAWL_PREFIX: &str = "crawl:";
+    let crawlers: Result<Vec<Crawler>, _> = map
         .iter()
-        .filter(|(name, _)| name.starts_with("crawl:"))
-        .map(|(name, section)| Crawler {
-            name: name.clone(),
-            // TODO: handle error
-            target: section
+        .filter(|(name, _)| name.starts_with(CRAWL_PREFIX))
+        .map(|(name, section)| {
+            let target = section
                 .get("target")
-                .expect("field not found")
-                .clone()
-                .unwrap(),
+                .cloned()
+                .flatten()
+                .ok_or(Error::MissingAttr("target"))?;
+            let videos = config
+                .getboolcoerce(name, "videos")
+                .map_err(Error::FailedParsing)?
+                .unwrap_or(false);
+            let name = name[CRAWL_PREFIX.len()..].to_owned();
+            Ok(Crawler {
+                name,
+                target,
+                videos,
+            })
         })
         .collect();
 
@@ -63,13 +81,14 @@ pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, String> {
     let working_dir = shellexpand::tilde(&working_dir).to_string();
     let working_dir = PathBuf::from(working_dir).into_boxed_path();
     Ok(Config {
-        crawlers,
+        crawlers: crawlers?,
         working_dir,
     })
 }
 
 #[tauri::command]
 pub fn ensure_default_config(state: tauri::State<AppState>, app: tauri::AppHandle) {
+    println!("reiter: ensuring default config");
     let default_config_file = app
         .path()
         .resolve("../sattel/sattel.cfg", tauri::path::BaseDirectory::Resource)
@@ -85,6 +104,7 @@ pub fn ensure_default_config(state: tauri::State<AppState>, app: tauri::AppHandl
 
     if !config_file.exists() {
         std::fs::copy(default_config_file, config_file).unwrap();
+        println!("reiter: create default config");
     }
 }
 
@@ -93,6 +113,12 @@ pub async fn watch_config(
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), ()> {
+    if state.watching_config.load(Ordering::SeqCst) {
+        return Err(());
+    }
+
+    state.watching_config.store(true, Ordering::SeqCst);
+
     let (tx, mut rx) = async_runtime::channel(1);
 
     let mut watcher = notify::RecommendedWatcher::new(
@@ -123,8 +149,10 @@ pub async fn watch_config(
             let now = Instant::now();
             if now.duration_since(last_config_change) >= cooldown {
                 last_config_change = now;
+                println!("reiter: config file changed");
+                tokio::time::sleep(Duration::from_millis(50)).await;
                 app.emit("configFileChanged", ()).unwrap();
-                println!("config file changed");
+                println!("reiter: emitted file changed event");
             }
         }
     }

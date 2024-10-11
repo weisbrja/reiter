@@ -135,7 +135,7 @@ pub async fn run_sattel(
                         child_stdin_tx.send(config_file_path).await.unwrap();
                     },
                     Message::Request { subject } => app.emit("request", subject).unwrap(),
-                    Message::Info { info } => println!("sattel: {}", info),
+                    Message::Info { info } => println!("sattel: {info}"),
                 }
             }
         }

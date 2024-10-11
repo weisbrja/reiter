@@ -2,7 +2,6 @@ import { defineConfig } from "vite";
 import preact from "@preact/preset-vite";
 import postcssConfig from "./postcss.config";
 
-// @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
