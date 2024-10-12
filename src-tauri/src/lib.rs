@@ -16,12 +16,17 @@ struct AppState {
 
 #[tauri::command]
 fn show_window(window: tauri::Window) {
-    println!("showing window");
+    log::debug!(target: "reiter", "showing window");
     window.show().unwrap();
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    env_logger::builder()
+        .format_timestamp_secs()
+        .filter_level(log::LevelFilter::Debug)
+        .init();
+
     tauri::Builder::default()
         .manage(AppState {
             sattel_exe: None.into(),

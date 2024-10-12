@@ -16,7 +16,7 @@ enum Message {
     Crawl { name: String },
     ProgressBar(ProgressBarMessagePayload),
     Request { subject: RequestSubject },
-    Info { info: String },
+    Log { info: String },
 }
 
 #[derive(Debug, thiserror::Error, serde::Serialize, serde::Deserialize)]
@@ -135,7 +135,7 @@ pub async fn run_sattel(
                         child_stdin_tx.send(config_file_path).await.unwrap();
                     },
                     Message::Request { subject } => app.emit("request", subject).unwrap(),
-                    Message::Info { info } => println!("sattel: {info}"),
+                    Message::Log { info } => log::info!(target: "sattel", "{}", info),
                 }
             }
         }
@@ -145,6 +145,7 @@ pub async fn run_sattel(
     app.unlisten(cancel_unlisten);
     child.kill().await.unwrap();
     child.wait().await.unwrap();
+    log::info!(target: "reiter", "canceled sattel");
 
     Ok(())
 }

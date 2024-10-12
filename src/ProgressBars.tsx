@@ -1,7 +1,6 @@
 import { useContext, useState, useEffect } from "preact/hooks";
-import { createContext } from "preact";
+import { createContext, JSX } from "preact";
 import { Channel } from "@tauri-apps/api/core";
-import { ReactNode } from "preact/compat";
 
 type ProgressBarKind = "download" | "crawl";
 
@@ -33,7 +32,7 @@ export function useProgressBarChannelContext() {
 	return context;
 }
 
-export function ProgressBarChannelContextProvider({ children }: { children: ReactNode }) {
+export function ProgressBarChannelContextProvider({ children }: { children: JSX.Element }) {
 	const [progressBarEvent] = useState(new Channel());
 	return <ProgressBarChannelContext.Provider value={progressBarEvent}>
 		{children}
@@ -79,7 +78,7 @@ export function ProgressBars() {
 					break;
 				case "done":
 					setRunning(prevRunning => {
-						if (prevRunning.get(id)!.bar == "download") {
+						if (prevRunning.get(id)!.bar === "download") {
 							setFinished(prevFinished => {
 								const nowFinished = new Map(prevFinished);
 								nowFinished.set(id, prevRunning.get(id)!);
@@ -112,7 +111,7 @@ export function ProgressBars() {
 	return <>
 		<div tabIndex={0} class="collapse collapse-arrow bg-base-300 mb-4">
 			<input type="checkbox" class="peer" />
-			<div class="collapse-title checked: text-xl font-medium">Finished downloads</div>
+			<div class="collapse-title checked: text-lg font-medium">Finished downloads</div>
 			<div
 				class="collapse-content">
 				{finishedDownloadBars}

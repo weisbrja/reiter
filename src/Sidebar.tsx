@@ -1,26 +1,26 @@
-interface SidebarItem {
-	label: string;
+import { Config } from "./App";
+
+interface SidebarProps {
+	config: Config | undefined;
+	setCrawlerName: (name: string) => void;
 }
 
-const sidebarItems: SidebarItem[] = [
-	{ label: 'Lineare Algebra 1' },
-	{ label: 'Analysis 2' },
-	{ label: 'Grundbegriffe der Informatik' },
-];
-
-export default function Sidebar() {
+export default function Sidebar({ config, setCrawlerName }: SidebarProps) {
+	// TODO: improve with <nav> maybe?
 	return (
-		<div class="h-screen w-1/4 min-w-60">
-			<nav>
-				{sidebarItems.map((item, index) => (
-					<div key={index} class="flex items-center p-4 hover:bg-base-300">
-						<span class="text-lg">{item.label}</span>
-					</div>
-				))}
-				<div class="flex items-center text-center justify-center p-4  hover:bg-base-300">
-					+
+		<div class="h-screen w-1/4 min-w-60 bg-base-200">
+			{config?.crawlers.map((item, index) => (
+				<div
+					key={index}
+					class="flex items-center p-4 hover:bg-base-300 cursor-pointer"
+					onClick={() => setCrawlerName(item.name)}
+				>
+					<span class="text-lg">{item.name}</span>
 				</div>
-			</nav>
+			))}
+			<div class="flex items-center justify-center p-4">
+				<button class="btn btn-success">+</button>
+			</div>
 		</div>
 	);
 }

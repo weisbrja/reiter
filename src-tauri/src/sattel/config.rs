@@ -88,7 +88,7 @@ pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, Error> {
 
 #[tauri::command]
 pub fn ensure_default_config(state: tauri::State<AppState>, app: tauri::AppHandle) {
-    println!("reiter: ensuring default config");
+    log::debug!(target: "reiter", "ensuring default config");
     let default_config_file = app
         .path()
         .resolve("../sattel/sattel.cfg", tauri::path::BaseDirectory::Resource)
@@ -104,7 +104,7 @@ pub fn ensure_default_config(state: tauri::State<AppState>, app: tauri::AppHandl
 
     if !config_file.exists() {
         std::fs::copy(default_config_file, config_file).unwrap();
-        println!("reiter: create default config");
+        log::info!(target: "reiter", "creating default config");
     }
 }
 
@@ -149,10 +149,10 @@ pub async fn watch_config(
             let now = Instant::now();
             if now.duration_since(last_config_change) >= cooldown {
                 last_config_change = now;
-                println!("reiter: config file changed");
+                log::info!(target: "reiter", "config file changed");
                 tokio::time::sleep(Duration::from_millis(50)).await;
                 app.emit("configFileChanged", ()).unwrap();
-                println!("reiter: emitted file changed event");
+                log::debug!(target: "reiter", "emitting file changed event");
             }
         }
     }
