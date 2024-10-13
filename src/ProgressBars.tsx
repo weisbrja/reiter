@@ -1,6 +1,5 @@
-import { useContext, useState, useEffect } from "preact/hooks";
-import { createContext, JSX } from "preact";
-import { Channel } from "@tauri-apps/api/core";
+import { useState, useEffect } from "preact/hooks";
+import { useSattelContext } from "./Sattel";
 
 type ProgressBarKind = "download" | "crawl";
 
@@ -10,7 +9,7 @@ type ProgressBarEvent =
 	| { kind: "setTotal"; total: number }
 	| { kind: "done" };
 
-interface ProgressBarMsg {
+export interface ProgressBarMsg {
 	id: number;
 	event: ProgressBarEvent;
 }
@@ -22,30 +21,13 @@ interface ProgressBar {
 	path: string,
 }
 
-export const ProgressBarChannelContext = createContext<Channel<ProgressBarMsg> | undefined>(undefined);
-
-export function useProgressBarChannelContext() {
-	const context = useContext(ProgressBarChannelContext);
-	if (context === undefined) {
-		throw new Error("useProgressBarChannelContext must be used with a ProgressBarChannelContextProvider");
-	}
-	return context;
-}
-
-export function ProgressBarChannelContextProvider({ children }: { children: JSX.Element }) {
-	const [progressBarEvent] = useState(new Channel());
-	return <ProgressBarChannelContext.Provider value={progressBarEvent}>
-		{children}
-	</ProgressBarChannelContext.Provider>;
-}
-
 export function ProgressBars() {
-	const progressBarEvent = useProgressBarChannelContext();
+	const { progressBarMsgs } = useSattelContext();
 	const [finished, setFinished] = useState<Map<number, ProgressBar>>(new Map());
 	const [running, setRunning] = useState<Map<number, ProgressBar>>(new Map());
 
 	useEffect(() => {
-		progressBarEvent.onmessage = message => {
+		progressBarMsgs.onmessage = message => {
 			const id = message.id;
 			const event = message.event;
 			switch (event.kind) {
@@ -78,6 +60,7 @@ export function ProgressBars() {
 					break;
 				case "done":
 					setRunning(prevRunning => {
+						// FIXME: fix this !
 						if (prevRunning.get(id)!.bar === "download") {
 							setFinished(prevFinished => {
 								const nowFinished = new Map(prevFinished);

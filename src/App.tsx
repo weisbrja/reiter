@@ -5,6 +5,7 @@ import "./App.css"
 import DefaultView from "./DefaultView";
 import Sidebar from "./Sidebar";
 import CrawlerView from "./CrawlerView";
+import SattelLoginHandler, { SattelProvider } from "./Sattel";
 
 export interface Config {
 	working_dir: string;
@@ -50,13 +51,17 @@ export default function App() {
 
 	return <div class="flex">
 		<Sidebar config={config} setCrawlerName={setCrawlerName} />
-		<div class="w-full">
-			{crawler
-				? <CrawlerView
-					crawler={crawler}
-					onBack={() => setCrawlerName(null)}
-				/>
-				: <DefaultView />}
-		</div>
-	</div >;
+		<SattelProvider>
+			<div class="w-full">
+				{crawler
+					? <CrawlerView
+						crawler={crawler}
+						onBack={() => setCrawlerName(null)}
+					/>
+					: <DefaultView />
+				}
+			</div>
+			<SattelLoginHandler />
+		</SattelProvider>
+	</div>;
 }

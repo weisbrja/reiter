@@ -64,7 +64,7 @@ enum ProgressBarKind {
 pub async fn run_sattel(
     state: tauri::State<'_, AppState>,
     app: tauri::AppHandle,
-    progress_bar_event: tauri::ipc::Channel<ProgressBarMessagePayload>,
+    progress_bar_msgs: tauri::ipc::Channel<ProgressBarMessagePayload>,
 ) -> Result<(), Error> {
     let sattel_cmd = state.sattel_exe.read().unwrap().clone().unwrap();
 
@@ -123,10 +123,10 @@ pub async fn run_sattel(
                             advance_count += 1;
                             if advance_count == 100 {
                                 advance_count = 0;
-                                progress_bar_event.send(payload.clone()).unwrap();
+                                progress_bar_msgs.send(payload.clone()).unwrap();
                             }
                         } else {
-                            progress_bar_event.send(payload.clone()).unwrap();
+                            progress_bar_msgs.send(payload.clone()).unwrap();
                         }
                     }
                     Message::Request { subject: RequestSubject::ConfigFilePath } => {
