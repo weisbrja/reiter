@@ -2,10 +2,10 @@ import { useEffect, useState } from "preact/hooks";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import "./App.css"
-import DefaultView from "./DefaultView";
-import Sidebar from "./Sidebar";
-import CrawlerView from "./CrawlerView";
-import SattelLoginHandler, { SattelProvider } from "./Sattel";
+import DefaultView from "./components/views/DefaultView";
+import CrawlerView from "./components/views/CrawlerView";
+import Sidebar from "./components/Sidebar";
+import SattelLoginHandler, { SattelProvider } from "./components/Sattel";
 
 export interface Config {
 	working_dir: string;

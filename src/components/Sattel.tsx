@@ -3,8 +3,8 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import { listen, emit } from "@tauri-apps/api/event";
 import { ProgressBarMsg, ProgressBars } from "./ProgressBars";
 import { Popup } from "./Popup";
-import { UsernameForm } from "./forms/UsernameForm";
-import { PasswordForm } from "./forms/PasswordForm";
+import { UsernameForm } from "../forms/UsernameForm";
+import { PasswordForm } from "../forms/PasswordForm";
 import { createContext, JSX } from "preact";
 
 type RequestSubject = "password" | "username" | "jsonArgs";

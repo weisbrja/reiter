@@ -1,5 +1,5 @@
-import { Crawler } from "./App";
-import Bar from "./Bar";
+import { Crawler } from "../../App";
+import Bar from "../Bar";
 
 export default function CrawlerView({ crawler, onBack }: { crawler: Crawler, onBack: () => void; }) {
 	return <>

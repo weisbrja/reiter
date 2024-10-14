@@ -1,5 +1,6 @@
-import { SattelProgress, useSattelContext } from "./Sattel";
-import Bar from "./Bar";
+import { SyncAllButton } from "../../buttons/SyncButton";
+import { SattelProgress, useSattelContext } from "../Sattel";
+import Bar from "../Bar";
 
 export default function DefaultView({ show }: { show: boolean }) {
 	const { isSattelRunning } = useSattelContext();
@@ -17,7 +18,3 @@ export default function DefaultView({ show }: { show: boolean }) {
 	</div>;
 }
 
-function SyncAllButton() {
-	const { startSattel } = useSattelContext();
-	return <button class="btn btn-primary" onClick={startSattel}>Sync All</button>;
-}

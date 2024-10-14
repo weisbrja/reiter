@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import { usePopupErrorContext } from "../Popup";
+import { usePopupErrorContext } from "../components/Popup";
 
 export function UsernameForm({ onSubmit }: { onSubmit: (username: string) => void; }) {
 	const { setError, onCancel } = usePopupErrorContext();

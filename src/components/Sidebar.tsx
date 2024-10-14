@@ -1,4 +1,5 @@
-import { Config } from "./App";
+import { Config } from "../App";
+import AddCrawlerButton from "../buttons/AddCrawlerButton";
 
 interface SidebarProps {
 	config: Config | undefined;
@@ -18,9 +19,7 @@ export default function Sidebar({ config, setCrawlerName }: SidebarProps) {
 					<span class="text-lg">{item.name}</span>
 				</div>
 			))}
-			<div class="flex items-center justify-center p-4">
-				<button class="btn btn-success">+</button>
-			</div>
+			<AddCrawlerButton />
 		</div>
 	);
 }
