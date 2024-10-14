@@ -27,8 +27,6 @@ export function Popup({ title, prevError, onCancel, children }: PopupProps) {
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		// FIXME: infinite loop?
-		console.log("setting prev error");
 		setError(prevError);
 	}, [prevError]);
 

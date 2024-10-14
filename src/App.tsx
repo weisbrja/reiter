@@ -47,19 +47,17 @@ export default function App() {
 
 	const crawler = config?.crawlers.find(crawler => crawler.name === crawlerName);
 
-	console.info("render App", crawler, config);
-
 	return <div class="flex">
 		<Sidebar config={config} setCrawlerName={setCrawlerName} />
 		<SattelProvider>
 			<div class="w-full">
-				{crawler
-					? <CrawlerView
+				{crawler &&
+					<CrawlerView
 						crawler={crawler}
 						onBack={() => setCrawlerName(null)}
 					/>
-					: <DefaultView />
 				}
+				<DefaultView show={crawler === undefined} />
 			</div>
 			<SattelLoginHandler />
 		</SattelProvider>

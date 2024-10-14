@@ -1,12 +1,10 @@
 import { SattelProgress, useSattelContext } from "./Sattel";
 import Bar from "./Bar";
 
-export default function DefaultView() {
-	// const [resetKey, setResetKey] = useState(0);
-
+export default function DefaultView({ show }: { show: boolean }) {
 	const { isSattelRunning } = useSattelContext();
 
-	return <>
+	return <div class={show ? "block" : "hidden"}>
 		<Bar>
 			<h1 class="w-full text-2xl font-bold text-center">Reiter</h1>
 		</Bar>
@@ -16,7 +14,7 @@ export default function DefaultView() {
 				: <SyncAllButton />
 			}
 		</div >
-	</>;
+	</div>;
 }
 
 function SyncAllButton() {
