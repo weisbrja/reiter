@@ -1,10 +1,11 @@
 import { useSattelContext } from '../components/Sattel'
 
-export function SyncAllButton() {
+// TODO: Rename this to SyncButton
+export function SyncAllButton({children}: {children: string}) {
     const { startSattel } = useSattelContext()
     return (
         <button class="btn btn-primary" onClick={startSattel}>
-            Sync All
+			{children}
         </button>
     )
 }
