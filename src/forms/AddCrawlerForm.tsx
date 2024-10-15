@@ -1,15 +1,18 @@
 import { useState } from 'preact/hooks'
 import { usePopupErrorContext } from '../components/Popup'
+import DropdownSelect from '../components/DropdownSelect'
 
 export interface Crawler {
 	refId: string
 	crawlerType: string
 }
 
+const crawlerTypes = ["kit-ilias-web", "ilias-web", 'local', '']
+
 export default function AddCrawlerForm({ onSubmit }: { onSubmit: (crawler: Crawler) => void }) {
 	const { setError, onCancel } = usePopupErrorContext()
-	const [refId, setRefId] = useState("")
-	const [crawlerType, setCrawlerType] = useState("kit-ilias-web")
+	const [refId, setRefId] = useState('')
+	const [crawlerType, setCrawlerType] = useState()
 
 	function handleSubmit(e: Event) {
 		e.preventDefault()
@@ -45,20 +48,15 @@ export default function AddCrawlerForm({ onSubmit }: { onSubmit: (crawler: Crawl
 				<div class="label">
 					<label class="label-text">Crawler</label>
 				</div>
-				<select class="select select-bordered" onInput={(e) => setCrawlerType((e.target as HTMLInputElement).value)}>
-					<option value={'kit-ilias-web'}>kit-ilias-web</option>
-					<option value={'ilias-web'}>ilias-web</option>
-					<option value={'kit-ipd'}>kit-ipd</option>
-					<option value={'local'}>local</option>
-				</select>
-			</div>
-			<div class="flex justify-end">
-				<button type="button" onClick={onCancel} class="btn btn-error mr-4">
-					Cancel
-				</button>
-				<button type="submit" class="btn btn-primary" onClick={handleSubmit}>
-					Add Crawler
-				</button>
+				<DropdownSelect onSelect={() => setCrawlerType}>{crawlerTypes}</DropdownSelect>
+				<div class="flex justify-end md-4">
+					<button type="button" onClick={onCancel} class="btn btn-error mr-4">
+						Cancel
+					</button>
+					<button type="submit" class="btn btn-primary" onClick={handleSubmit}>
+						Add Crawler
+					</button>
+				</div>
 			</div>
 		</form>
 	)
