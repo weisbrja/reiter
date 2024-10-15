@@ -9,18 +9,11 @@ export default function ProgressView() {
 		<>
 			<Bar>
 				<h1 class="w-full text-2xl font-bold text-center">Syncing</h1>
+				<button class="absolute right-2 btn btn-error" onClick={cancelSattel}>
+					Cancel
+				</button>
 			</Bar>
 			<div class="p-4">
-				<div class="flex items-center justify-between mb-4">
-					<button class="btn btn-error mr-4" onClick={cancelSattel}>
-						Cancel
-					</button>
-					{currentCrawler ? (
-						<span class="font-bold">Crawling {currentCrawler}</span>
-					) : (
-						<span class="loading loading-dots"></span>
-					)}
-				</div>
 				<ProgressBars />
 			</div>
 		</>

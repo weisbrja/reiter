@@ -19,10 +19,11 @@ export default function CrawlerView({
 					Back
 				</button>
 				<h1 class="w-full text-2xl font-bold text-center">Crawler {crawler.name}</h1>
+				<div class="total right-2">
+					<SyncButton crawler={crawler.name} />
+				</div>
 			</Bar>
 			<div class="p-4">
-				<SyncButton crawler={crawler.name} />
-				<h2 class="w-full text-xl font-medium text-center">Settings</h2>
 				<EditCrawlerForm config={config} crawler={crawler} onSubmit={(_crawler) => {}} />
 			</div>
 		</>

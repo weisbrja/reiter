@@ -52,18 +52,19 @@ export function SattelProvider({ children }: { children: JSX.Element | JSX.Eleme
 	}
 
 	function cancelSattel() {
-		emit("cancel")
 		setQueuedCrawlers(undefined)
+		emit("cancel")
 	}
 
 	async function runSattel(jsonArgs: string) {
 		setSattelRunning(true)
 		await invoke("ensure_default_config")
 		await invoke("run_sattel", { jsonArgs, progressBarMsgs }).catch((error) => console.error(error))
-		setSattelRunning(false)
+		console.info("sattel done")
 		setProgressBarMsgs(new Channel())
 		setFinishedProgressBars(new Map())
 		setRunningProgressBars(new Map())
+		setSattelRunning(false)
 	}
 
 	// run sattel if sattel is not already running but there are crawlers queued

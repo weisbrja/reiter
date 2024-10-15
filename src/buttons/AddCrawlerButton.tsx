@@ -12,7 +12,7 @@ export default function AddCrawlerButton() {
 	}
 
 	return (
-		<div class="w-full p-4">
+		<div class="w-full mt-2 p-2">
 			<button class="w-full btn btn-success" onClick={() => setShowForm(true)}>
 				+
 			</button>

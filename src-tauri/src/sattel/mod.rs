@@ -89,7 +89,7 @@ pub async fn run_sattel(
                 serde_json::from_str(event.payload()).expect("invalid json message from frontend");
             log::debug!(target: "reiter", "parsed response: {:?}", response);
             let child_stdin_tx = child_stdin_tx.clone();
-            async_runtime::block_on(async move {
+            async_runtime::spawn(async move {
                 child_stdin_tx.send(response).await.unwrap();
             });
         })
@@ -98,7 +98,7 @@ pub async fn run_sattel(
     let (cancel_tx, mut cancel_rx) = async_runtime::channel(1);
     let cancel_unlisten = app.listen("cancel", move |_event| {
         let cancel_tx = cancel_tx.clone();
-        async_runtime::block_on(async move {
+        async_runtime::spawn(async move {
             let _ = cancel_tx.send(()).await;
         });
     });

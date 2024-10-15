@@ -21,7 +21,7 @@ export interface ProgressBar {
 }
 
 export function ProgressBars() {
-	const { finishedProgressBars, runningProgressBars } = useSattelContext()
+	const { finishedProgressBars, runningProgressBars, currentCrawler } = useSattelContext()
 
 	const running = Array.from(runningProgressBars.entries()).map(([id, props]) => (
 		<RunningProgressBar key={id} {...props} />
@@ -33,10 +33,17 @@ export function ProgressBars() {
 
 	return (
 		<>
-			<div tabIndex={0} class="collapse collapse-arrow bg-base-300 mb-4">
+			<div tabIndex={0} class="collapse collapse-arrow bg-base-300 mb-8">
 				<input type="checkbox" class="peer" />
 				<div class="collapse-title checked: text-lg font-medium">Finished downloads</div>
 				<div class="collapse-content">{finished}</div>
+			</div>
+			<div class="flex items-center justify-between mb-6">
+				{currentCrawler ? (
+					<span class="w-full text-lg text-center font-bold">Crawling {currentCrawler}</span>
+				) : (
+					<span class="loading loading-dots"></span>
+				)}
 			</div>
 			{running}
 		</>

@@ -8,10 +8,11 @@ export function SettingsView({ config }: { config: Config | undefined }) {
 		<>
 			<Bar>
 				<h1 class="w-full text-2xl font-bold text-center">Reiter</h1>
+				<div class="absolute right-2">
+					<SyncButton crawler={null} />
+				</div>
 			</Bar>
 			<div class="p-4">
-				<SyncButton crawler={null} />
-				<h2 class="w-full text-xl font-medium text-center">Settings</h2>
 				<SettingsForm config={config} onSubmit={() => {}} />
 			</div>
 		</>
