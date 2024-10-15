@@ -1,39 +1,29 @@
 import { useState } from "preact/hooks"
-import { usePopupErrorContext } from "../components/Popup"
-import { Crawler } from "../App"
+import { Config, Crawler } from "../App"
 
-export default function AddCrawlerForm({ onSubmit }: { onSubmit: (crawler: Crawler) => void }) {
-	const { setError, onCancel } = usePopupErrorContext()
-	const [name, setName] = useState("")
-	const [target, setTarget] = useState("")
-	const [type, setCrawlerType] = useState("kit-ilias-web")
+export default function EditCrawlerForm({
+	crawler,
+	onSubmit,
+}: {
+	config: Config | undefined
+	crawler: Crawler
+	onSubmit: (crawler: Crawler) => void
+}) {
+	const [name, setName] = useState(crawler.name)
+	const [target, setTarget] = useState(crawler.target)
+	const [type, setType] = useState(crawler.type)
 
 	function handleSubmit(e: Event) {
 		e.preventDefault()
 
-		if (!name) {
-			setError("Name is required")
-			return
-		}
-
-		if (!target) {
-			setError("Target is required")
-			return
-		}
-
-		if (!type) {
-			setError("Crawler type is required")
-			return
-		}
-
-		const crawler: Crawler = {
+		onSubmit({
+			...crawler,
 			name,
 			target,
 			type,
-			videos: false,
-		}
-		onSubmit(crawler)
+		})
 	}
+
 	return (
 		<form>
 			<div class="form-control mb-4">
@@ -60,7 +50,7 @@ export default function AddCrawlerForm({ onSubmit }: { onSubmit: (crawler: Crawl
 				<div class="label">
 					<label class="label-text">Crawler</label>
 				</div>
-				<select class="select select-bordered" onInput={(e) => setCrawlerType((e.target as HTMLInputElement).value)}>
+				<select class="select select-bordered" onInput={(e) => setType((e.target as HTMLInputElement).value)}>
 					<option value={"kit-ilias-web"}>kit-ilias-web</option>
 					<option value={"ilias-web"}>ilias-web</option>
 					<option value={"kit-ipd"}>kit-ipd</option>
@@ -68,11 +58,8 @@ export default function AddCrawlerForm({ onSubmit }: { onSubmit: (crawler: Crawl
 				</select>
 			</div>
 			<div class="flex justify-end">
-				<button type="button" onClick={onCancel} class="btn btn-error mr-4">
-					Cancel
-				</button>
 				<button type="submit" class="btn btn-primary" onClick={handleSubmit}>
-					Confirm
+					Save
 				</button>
 			</div>
 		</form>

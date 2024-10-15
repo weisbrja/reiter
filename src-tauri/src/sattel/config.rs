@@ -47,8 +47,9 @@ pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, Error> {
     let config_file = config_file.as_ref().unwrap();
 
     let mut defaults = IniDefault::default();
+    const DEFAULT_SECTION: &str = "DEFAULT";
     defaults.case_sensitive = true;
-    defaults.default_section = "DEFAULT".to_owned();
+    defaults.default_section = DEFAULT_SECTION.to_owned();
     let mut config = Ini::new_from_defaults(defaults);
     let map = config.load(config_file).map_err(Error::FailedParsing)?;
 
@@ -76,9 +77,9 @@ pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, Error> {
         .collect();
 
     let working_dir = config
-        .get("default", "working_dir")
+        .get(DEFAULT_SECTION, "working_dir")
         .unwrap_or(".".to_owned());
-    let working_dir = shellexpand::tilde(&working_dir).to_string();
+    // let working_dir = shellexpand::tilde(&working_dir).to_string();
     let working_dir = PathBuf::from(working_dir).into_boxed_path();
     Ok(Config {
         crawlers: crawlers?,

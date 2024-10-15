@@ -1,11 +1,10 @@
-import { useSattelContext } from '../components/Sattel'
+import { useSattelContext } from "../components/Sattel"
 
-// TODO: Rename this to SyncButton
-export function SyncAllButton({children}: {children: string}) {
-    const { startSattel } = useSattelContext()
-    return (
-        <button class="btn btn-primary" onClick={startSattel}>
-			{children}
-        </button>
-    )
+export function SyncButton({ crawler }: { crawler: string | null }) {
+	const { queueSattel } = useSattelContext()
+	return (
+		<button class="btn btn-primary" onClick={() => queueSattel(crawler)}>
+			{crawler ? "Sync" : "Sync All"}
+		</button>
+	)
 }

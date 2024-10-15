@@ -1,16 +1,16 @@
-import { Crawler } from '../../App'
-import SettingsButton from '../../buttons/SettingsButton'
-import { SyncAllButton } from '../../buttons/SyncButton'
-import Bar from '../Bar'
+import { Config, Crawler } from "../../App"
+import { SyncButton } from "../../buttons/SyncButton"
+import EditCrawlerForm from "../../forms/EditCrawlerform"
+import Bar from "../Bar"
 
 export default function CrawlerView({
+	config,
 	crawler,
 	onBack,
-	onSettings,
 }: {
+	config: Config | undefined
 	crawler: Crawler
 	onBack: () => void
-	onSettings: () => void
 }) {
 	return (
 		<>
@@ -18,14 +18,12 @@ export default function CrawlerView({
 				<button class="btn btn-error" onClick={onBack}>
 					Back
 				</button>
-				<div class="flex-1 text-center">
-					<h1 class="text-2xl font-bold">{crawler.name}</h1>
-				</div>
+				<h1 class="w-full text-2xl font-bold text-center">Crawler {crawler.name}</h1>
 			</Bar>
-			<div class="flex-1 space-between p-4">
-				{/* FIXME: add sync crawler button */}
-				<SyncAllButton>Sync All</SyncAllButton>
-				<SettingsButton onClick={onSettings}>Settings</SettingsButton>
+			<div class="p-4">
+				<SyncButton crawler={crawler.name} />
+				<h2 class="w-full text-xl font-medium text-center">Settings</h2>
+				<EditCrawlerForm config={config} crawler={crawler} onSubmit={(_crawler) => {}} />
 			</div>
 		</>
 	)

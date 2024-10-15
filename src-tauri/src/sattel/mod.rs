@@ -17,6 +17,7 @@ enum Message {
     ProgressBar(ProgressBarMessagePayload),
     Request { subject: RequestSubject },
     Log { info: String },
+    Done,
 }
 
 #[derive(Debug, thiserror::Error, serde::Serialize, serde::Deserialize)]
@@ -30,10 +31,8 @@ pub struct Error {
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 enum RequestSubject {
-    ConfigFilePath,
     Password,
     Username,
-    JsonArgs,
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
@@ -64,11 +63,16 @@ enum ProgressBarKind {
 pub async fn run_sattel(
     state: tauri::State<'_, AppState>,
     app: tauri::AppHandle,
+    json_args: String,
     progress_bar_msgs: tauri::ipc::Channel<ProgressBarMessagePayload>,
 ) -> Result<(), Error> {
     let sattel_cmd = state.sattel_exe.read().unwrap().clone().unwrap();
 
+    let config_file_path = state.config_file.read().unwrap().clone().unwrap();
+
     let mut child = Command::new(&*sattel_cmd)
+        .arg(json_args)
+        .arg(config_file_path.to_str().unwrap())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
@@ -83,6 +87,7 @@ pub async fn run_sattel(
         app.listen("response", move |event| {
             let response: String =
                 serde_json::from_str(event.payload()).expect("invalid json message from frontend");
+            log::debug!(target: "reiter", "parsed response: {:?}", response);
             let child_stdin_tx = child_stdin_tx.clone();
             async_runtime::block_on(async move {
                 child_stdin_tx.send(response).await.unwrap();
@@ -105,7 +110,10 @@ pub async fn run_sattel(
 
     loop {
         tokio::select! {
-            Some(()) = cancel_rx.recv() => break,
+            Some(()) = cancel_rx.recv() => {
+                log::info!(target: "reiter", "canceled");
+                break;
+            },
             Some(response) = child_stdin_rx.recv() => {
                 stdin.write_all(response.as_bytes()).await.unwrap();
                 let _ = stdin.write(b"\n").await.unwrap();
@@ -129,12 +137,11 @@ pub async fn run_sattel(
                             progress_bar_msgs.send(payload.clone()).unwrap();
                         }
                     }
-                    Message::Request { subject: RequestSubject::ConfigFilePath } => {
-                        let config_file_path = state.config_file.read().unwrap().clone().unwrap();
-                        let config_file_path = config_file_path.to_str().unwrap().to_owned();
-                        child_stdin_tx.send(config_file_path).await.unwrap();
-                    },
                     Message::Request { subject } => app.emit("request", subject).unwrap(),
+                    Message::Done => {
+                        log::info!(target: "sattel", "done");
+                        break;
+                    },
                     Message::Log { info } => log::info!(target: "sattel", "{}", info),
                 }
             }
@@ -145,7 +152,6 @@ pub async fn run_sattel(
     app.unlisten(cancel_unlisten);
     child.kill().await.unwrap();
     child.wait().await.unwrap();
-    log::info!(target: "reiter", "canceled sattel");
 
     Ok(())
 }

@@ -1,26 +1,10 @@
-import { SyncAllButton } from '../../buttons/SyncButton'
-import { SattelProgress, useSattelContext } from '../Sattel'
-import Bar from '../Bar'
-import SettingsButton from '../../buttons/SettingsButton'
+import { Config } from "../../App"
+import { useSattelContext } from "../Sattel"
+import ProgressView from "./ProgressView"
+import { SettingsView } from "./SettingsView"
 
-export default function DefaultView({ show, onSettings}: { show: boolean, onSettings: () => void }) {
+export default function DefaultView({ config }: { config: Config | undefined }) {
 	const { isSattelRunning } = useSattelContext()
 
-	return (
-		<div class={show ? 'block' : 'hidden'}>
-			<Bar>
-				<h1 class="w-full text-2xl font-bold text-center">Reiter</h1>
-			</Bar>
-			<div class="p-4">
-				{isSattelRunning ? (
-					<SattelProgress />
-				) : (
-					<div class={"flex-1"}> 
-						<SyncAllButton> Sync All </SyncAllButton>
-						<SettingsButton onClick={onSettings}>Settings</SettingsButton>
-					</div>
-				)}
-			</div>
-		</div>
-	)
+	return isSattelRunning ? <ProgressView /> : <SettingsView config={config} />
 }

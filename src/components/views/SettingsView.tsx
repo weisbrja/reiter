@@ -1,23 +1,18 @@
-import { Config } from '../../App'
-import Bar from '../Bar'
+import { Config } from "../../App"
+import { SyncButton } from "../../buttons/SyncButton"
+import SettingsForm from "../../forms/SettingsForm"
+import Bar from "../Bar"
 
-export default function SettingsView({ config, onBack }: { config: Config; onBack: () => void }) {
+export function SettingsView({ config }: { config: Config | undefined }) {
 	return (
 		<>
 			<Bar>
-				<button class="btn btn-error" onClick={onBack}>
-					back
-				</button>
-				<h1 class="w-full text-2xl font-bold text-center">Settings</h1>
+				<h1 class="w-full text-2xl font-bold text-center">Reiter</h1>
 			</Bar>
 			<div class="p-4">
-				<div class="flex-1 mb-4">
-					<div class="flex-1 mb-4">
-						<label> work dir </label>
-						<input type="text" value={config.working_dir} class="input input-bordered" id="ref_id" />
-					</div>
-				</div>
-				<button class="btn btn-primary"> save </button>
+				<SyncButton crawler={null} />
+				<h2 class="w-full text-xl font-medium text-center">Settings</h2>
+				<SettingsForm config={config} onSubmit={() => {}} />
 			</div>
 		</>
 	)
