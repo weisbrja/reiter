@@ -4,17 +4,16 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 use std::time::Instant;
 
-use configparser::ini::Ini;
-use configparser::ini::IniDefault;
+use configparser::ini::WriteOptions;
 use notify::Watcher;
 use tauri::Emitter;
 use tauri::{async_runtime, Manager};
 
 use crate::AppState;
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Crawler {
+pub struct Crawler {
     name: String,
     target: String,
     videos: bool,
@@ -28,8 +27,18 @@ struct Crawler {
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    working_dir: Box<Path>,
+    settings: Settings,
     crawlers: Vec<Crawler>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Settings {
+    working_dir: Box<Path>,
+}
+
+impl Settings {
+    pub const SECTION_NAME: &str = "DEFAULT";
 }
 
 // TODO
@@ -39,6 +48,8 @@ pub enum Error {
     FailedParsing(String),
     #[error("config missing attribute: {0}")]
     MissingAttr(&'static str),
+    #[error("failed writing config: {0}")]
+    WriteError(String),
 }
 
 #[tauri::command]
@@ -46,15 +57,21 @@ pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, Error> {
     let config_file = state.config_file.read().unwrap();
     let config_file = config_file.as_ref().unwrap();
 
-    let mut defaults = IniDefault::default();
-    const DEFAULT_SECTION: &str = "DEFAULT";
-    defaults.case_sensitive = true;
-    defaults.default_section = DEFAULT_SECTION.to_owned();
-    let mut config = Ini::new_from_defaults(defaults);
-    let map = config.load(config_file).map_err(Error::FailedParsing)?;
+    let mut ini = state.ini.write().unwrap();
+    let ini = ini.as_mut().unwrap();
+    ini.load(config_file).map_err(Error::FailedParsing)?;
+
+    let working_dir = ini
+        .get(Settings::SECTION_NAME, "working_dir")
+        .unwrap_or(".".to_owned());
+    // let working_dir = shellexpand::tilde(&working_dir).to_string();
+    let working_dir = PathBuf::from(working_dir).into_boxed_path();
+
+    let settings = Settings { working_dir };
 
     const CRAWL_PREFIX: &str = "crawl:";
-    let crawlers: Result<Vec<Crawler>, _> = map
+    let crawlers = ini
+        .get_map_ref()
         .iter()
         .filter(|(name, _)| name.starts_with(CRAWL_PREFIX))
         .map(|(name, section)| {
@@ -63,7 +80,7 @@ pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, Error> {
                 .cloned()
                 .flatten()
                 .ok_or(Error::MissingAttr("target"))?;
-            let videos = config
+            let videos = ini
                 .getboolcoerce(name, "videos")
                 .map_err(Error::FailedParsing)?
                 .unwrap_or(false);
@@ -74,17 +91,69 @@ pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, Error> {
                 videos,
             })
         })
-        .collect();
+        .collect::<Result<_, _>>()?;
 
-    let working_dir = config
-        .get(DEFAULT_SECTION, "working_dir")
-        .unwrap_or(".".to_owned());
-    // let working_dir = shellexpand::tilde(&working_dir).to_string();
-    let working_dir = PathBuf::from(working_dir).into_boxed_path();
-    Ok(Config {
-        crawlers: crawlers?,
-        working_dir,
-    })
+    Ok(Config { settings, crawlers })
+}
+
+#[cfg(windows)]
+const LINE_ENDING: &str = "\r\n";
+#[cfg(not(windows))]
+const LINE_ENDING: &str = "\n";
+
+#[tauri::command]
+pub fn save_settings(state: tauri::State<AppState>, settings: Settings) -> Result<(), Error> {
+    parse_config(state.clone())?;
+
+    let mut ini = state.ini.write().unwrap();
+    let ini = ini.as_mut().unwrap();
+
+    let working_dir = settings.working_dir.to_str().unwrap();
+    if working_dir != "." {
+        ini.set(
+            Settings::SECTION_NAME,
+            "working_dir",
+            Some(working_dir.to_string()),
+        );
+    }
+
+    let config_file = state.config_file.read().unwrap();
+    let config_file = config_file.as_ref().unwrap();
+
+    std::fs::write(
+        config_file,
+        format!(
+            "[{}]{LINE_ENDING}{}",
+            Settings::SECTION_NAME,
+            ini.pretty_writes(&WriteOptions::new_with_params(true, 4, 1))
+        ),
+    )
+    .map_err(|e| Error::WriteError(e.to_string()))
+}
+
+#[tauri::command]
+pub fn save_crawler(state: tauri::State<AppState>, crawler: Crawler) -> Result<(), Error> {
+    parse_config(state.clone())?;
+
+    let mut ini = state.ini.write().unwrap();
+    let ini = ini.as_mut().unwrap();
+
+    let section = format!("crawl:{}", crawler.name);
+    ini.set(&section, "target", Some(crawler.target));
+    ini.set(&section, "videos", Some(crawler.videos.to_string()));
+
+    let config_file = state.config_file.read().unwrap();
+    let config_file = config_file.as_ref().unwrap();
+
+    std::fs::write(
+        config_file,
+        format!(
+            "[{}]{LINE_ENDING}{}",
+            Settings::SECTION_NAME,
+            ini.pretty_writes(&WriteOptions::new_with_params(true, 4, 1))
+        ),
+    )
+    .map_err(|e| Error::WriteError(e.to_string()))
 }
 
 #[tauri::command]
@@ -140,7 +209,7 @@ pub async fn watch_config(
 
     let config_file = state.config_file.read().unwrap().clone().unwrap();
 
-    let cooldown = Duration::from_millis(100);
+    let cooldown = Duration::from_millis(300);
     let mut last_config_change = Instant::now() - cooldown;
 
     while let Some(result) = rx.recv().await {
@@ -151,9 +220,12 @@ pub async fn watch_config(
             if now.duration_since(last_config_change) >= cooldown {
                 last_config_change = now;
                 log::info!(target: "reiter", "config file changed");
-                tokio::time::sleep(Duration::from_millis(50)).await;
-                app.emit("configFileChanged", ()).unwrap();
-                log::debug!(target: "reiter", "emitting file changed event");
+                let app = app.clone();
+                async_runtime::spawn(async move {
+                    tokio::time::sleep(cooldown / 3).await;
+                    app.emit("configFileChanged", ()).unwrap();
+                    log::debug!(target: "reiter", "emitting file changed event");
+                });
             }
         }
     }

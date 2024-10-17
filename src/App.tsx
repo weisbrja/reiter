@@ -8,8 +8,12 @@ import SattelLoginHandler, { SattelProvider } from "./components/Sattel"
 import CrawlerView from "./components/views/CrawlerView"
 
 export interface Config {
-	workingDir: string
+	settings: Settings
 	crawlers: Crawler[]
+}
+
+export interface Settings {
+	workingDir: string
 }
 
 export interface Crawler {
@@ -26,10 +30,10 @@ export default function App() {
 
 	useEffect(() => {
 		invoke("show_window")
+		parseConfig()
 
 		const configFileChangedUnlisten = listen("configFileChanged", (_) => {
-			console.warn("config changed")
-			setConfigKey((prevKey) => prevKey + 1)
+			parseConfig()
 		})
 
 		invoke("watch_config").catch((_) => {
@@ -39,15 +43,15 @@ export default function App() {
 		return () => configFileChangedUnlisten.then((unlisten) => unlisten())
 	}, [])
 
-	useEffect(() => {
-		console.log("loading config")
-
+	function parseConfig() {
+		console.info("parse config")
 		invoke<Config>("parse_config")
 			.then((config) => {
 				setConfig(config)
+				setConfigKey((prevKey) => prevKey + 1)
 			})
 			.catch((error) => console.error(error))
-	}, [configKey])
+	}
 
 	const crawler = config?.crawlers.find((crawler) => crawler.name === crawlerName)
 

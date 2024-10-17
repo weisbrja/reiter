@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core"
 import { Config } from "../../App"
 import { SyncButton } from "../../buttons/SyncButton"
 import SettingsForm from "../../forms/SettingsForm"
@@ -13,7 +14,12 @@ export function SettingsView({ config }: { config: Config | undefined }) {
 				</div>
 			</Bar>
 			<div class="p-4">
-				<SettingsForm config={config} onSubmit={() => {}} />
+				<SettingsForm
+					config={config}
+					onSubmit={(settings) => {
+						invoke("save_settings", { settings }).catch((error) => console.error(error))
+					}}
+				/>
 			</div>
 		</>
 	)

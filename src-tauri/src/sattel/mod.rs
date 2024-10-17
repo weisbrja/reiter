@@ -123,7 +123,10 @@ pub async fn run_sattel(
                 let message: Message =
                     serde_json::from_str(&line).expect("invalid json message from sattel");
                 match message {
-                    Message::Error(error) => return Err(error),
+                    Message::Error(error) => {
+                        log::error!(target: "sattel", "{:?}", error);
+                        return Err(error)
+                    },
                     Message::LoginFailed => app.emit("loginFailed", ()).unwrap(),
                     Message::Crawl { name } => app.emit("crawl", name).unwrap(),
                     Message::ProgressBar(ref payload @ ProgressBarMessagePayload { ref event, .. }) => {

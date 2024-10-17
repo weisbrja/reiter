@@ -1,18 +1,20 @@
 import { useState } from "preact/hooks"
-import { Config } from "../App"
+import { Config, Settings } from "../App"
 
 export default function SettingsForm({
 	config,
 	onSubmit,
 }: {
 	config: Config | undefined
-	onSubmit: (username: string) => void
+	onSubmit: (settings: Settings) => void
 }) {
-	const [workingDir, setWorkingDir] = useState(config ? config.workingDir : "")
+	const [workingDir, setWorkingDir] = useState(config ? config.settings.workingDir : "")
 
 	function handleSubmit(e: Event) {
 		e.preventDefault()
-		onSubmit(workingDir)
+
+		const settings: Settings = { workingDir }
+		onSubmit(settings)
 	}
 
 	return (
