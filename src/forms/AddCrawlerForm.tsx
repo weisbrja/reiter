@@ -1,9 +1,9 @@
 import { useState } from "preact/hooks"
-import { usePopupErrorContext } from "../components/Popup"
+import { useFormErrorContext } from "../components/Popup"
 import { Crawler } from "../App"
 
 export default function AddCrawlerForm({ onSubmit }: { onSubmit: (crawler: Crawler) => void }) {
-	const { setError, onCancel } = usePopupErrorContext()
+	const { setError, onCancel } = useFormErrorContext()
 	const [name, setName] = useState("")
 	const [target, setTarget] = useState("")
 	const [type, setCrawlerType] = useState("kit-ilias-web")

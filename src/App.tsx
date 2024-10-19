@@ -6,6 +6,7 @@ import DefaultView from "./components/views/DefaultView"
 import Sidebar from "./components/Sidebar"
 import SattelLoginHandler, { SattelProvider } from "./components/Sattel"
 import CrawlerView from "./components/views/CrawlerView"
+import { FormErrorContext } from "./components/Popup"
 
 export interface Config {
 	settings: Settings
@@ -53,19 +54,18 @@ export default function App() {
 			.catch((error) => console.error(error))
 	}
 
-	const crawler = config?.crawlers.find((crawler) => crawler.name === crawlerName)
-
 	return (
 		<SattelProvider>
 			<SattelLoginHandler />
 			<div class="flex">
 				<Sidebar key={configKey} config={config} setCrawlerName={setCrawlerName} />
 				<div class="w-full">
-					{crawler ? (
+					{crawlerName !== null ? (
 						<CrawlerView
-							key={configKey + "#" + crawlerName}
+							key={configKey}
 							config={config}
-							crawler={crawler}
+							crawlerName={crawlerName}
+							setCrawlerName={setCrawlerName}
 							onBack={() => setCrawlerName(null)}
 						/>
 					) : (

@@ -48,8 +48,8 @@ pub enum Error {
     FailedParsing(String),
     #[error("config missing attribute: {0}")]
     MissingAttr(&'static str),
-    #[error("failed writing config: {0}")]
-    WriteError(String),
+    #[error("failed saving config: {0}")]
+    SaveError(String),
 }
 
 #[tauri::command]
@@ -128,19 +128,35 @@ pub fn save_settings(state: tauri::State<AppState>, settings: Settings) -> Resul
             ini.pretty_writes(&WriteOptions::new_with_params(true, 4, 1))
         ),
     )
-    .map_err(|e| Error::WriteError(e.to_string()))
+    .map_err(|e| Error::SaveError(e.to_string()))
 }
 
 #[tauri::command]
-pub fn save_crawler(state: tauri::State<AppState>, crawler: Crawler) -> Result<(), Error> {
+pub fn save_crawler(
+    state: tauri::State<AppState>,
+    old_crawler_name: String,
+    new_crawler: Crawler,
+) -> Result<(), Error> {
     parse_config(state.clone())?;
 
     let mut ini = state.ini.write().unwrap();
     let ini = ini.as_mut().unwrap();
 
-    let section = format!("crawl:{}", crawler.name);
-    ini.set(&section, "target", Some(crawler.target));
-    ini.set(&section, "videos", Some(crawler.videos.to_string()));
+    let section = format!("crawl:{}", new_crawler.name);
+    if old_crawler_name != new_crawler.name {
+        let old_section = format!("crawl:{}", old_crawler_name);
+        let map = ini
+            .remove_section(&old_section)
+            .ok_or(Error::SaveError(format!(
+                "crawler {} does not exist",
+                old_crawler_name
+            )))?;
+        for (key, val) in map {
+            ini.set(&section, &key, val);
+        }
+    }
+    ini.set(&section, "target", Some(new_crawler.target));
+    ini.set(&section, "videos", Some(new_crawler.videos.to_string()));
 
     let config_file = state.config_file.read().unwrap();
     let config_file = config_file.as_ref().unwrap();
@@ -153,7 +169,7 @@ pub fn save_crawler(state: tauri::State<AppState>, crawler: Crawler) -> Result<(
             ini.pretty_writes(&WriteOptions::new_with_params(true, 4, 1))
         ),
     )
-    .map_err(|e| Error::WriteError(e.to_string()))
+    .map_err(|e| Error::SaveError(e.to_string()))
 }
 
 #[tauri::command]

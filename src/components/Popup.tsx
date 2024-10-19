@@ -1,17 +1,17 @@
 import { createContext, JSX } from "preact"
 import { useState, useEffect, useContext } from "preact/hooks"
 
-type PopupErrorContextType = {
+type FormErrorContextType = {
 	setError: (error: string | null) => void
 	onCancel: () => void
 }
 
-export const PopupErrorContext = createContext<PopupErrorContextType | undefined>(undefined)
+export const FormErrorContext = createContext<FormErrorContextType | undefined>(undefined)
 
-export function usePopupErrorContext() {
-	const context = useContext(PopupErrorContext)
+export function useFormErrorContext() {
+	const context = useContext(FormErrorContext)
 	if (context === undefined) {
-		throw new Error("usePopupErrorContext must be used with a PopupErrorContext.Provider")
+		throw new Error("useFormErrorContext must be used with a FormErrorContext.Provider")
 	}
 	return context
 }
@@ -36,7 +36,7 @@ export function Popup({ title, prevError, onCancel, children }: PopupProps) {
 				<div class="bg-base-300 rounded-lg p-6 w-1/3 min-w-96">
 					<h2 class="text-lg font-bold mb-4">{title}</h2>
 					{error && <p class="text-error mb-2">{error}</p>}
-					<PopupErrorContext.Provider value={{ setError, onCancel }}>{children}</PopupErrorContext.Provider>
+					<FormErrorContext.Provider value={{ setError, onCancel }}>{children}</FormErrorContext.Provider>
 				</div>
 			)}
 		</div>

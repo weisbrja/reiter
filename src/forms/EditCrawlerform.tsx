@@ -1,26 +1,33 @@
 import { useState } from "preact/hooks"
-import { Config, Crawler } from "../App"
+import { Crawler } from "../App"
+import { useFormErrorContext } from "../components/Popup"
 
 export default function EditCrawlerForm({
 	crawler,
 	onSubmit,
 }: {
-	config: Config | undefined
-	crawler: Crawler
+	crawler: Crawler | undefined
 	onSubmit: (crawler: Crawler) => void
 }) {
-	const [name, setName] = useState(crawler.name)
-	const [target, setTarget] = useState(crawler.target)
-	const [type, setType] = useState(crawler.type)
+	const { setError, onCancel } = useFormErrorContext()
+
+	const [name, setName] = useState(crawler?.name || "")
+	const [target, setTarget] = useState(crawler?.target || "")
+	const [type, setType] = useState(crawler?.type || "")
 
 	function handleSubmit(e: Event) {
 		e.preventDefault()
 
+		if (!name) {
+			setError("Name required.")
+			return
+		}
+
 		onSubmit({
-			...crawler,
 			name,
 			target,
 			type,
+			videos: false,
 		})
 	}
 
@@ -58,6 +65,9 @@ export default function EditCrawlerForm({
 				</select>
 			</div>
 			<div class="flex justify-end">
+				<button type="button" onClick={onCancel} class="btn btn-error mr-4">
+					Cancel
+				</button>
 				<button type="submit" class="btn btn-primary" onClick={handleSubmit}>
 					Save
 				</button>

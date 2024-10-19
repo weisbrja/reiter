@@ -1,8 +1,8 @@
 import { useState } from "preact/hooks"
-import { usePopupErrorContext } from "../components/Popup"
+import { useFormErrorContext } from "../components/Popup"
 
 export default function PasswordForm({ onSubmit }: { onSubmit: (password: string) => void }) {
-	const { setError, onCancel } = usePopupErrorContext()
+	const { setError, onCancel } = useFormErrorContext()
 	const [password, setPassword] = useState("")
 
 	function handleSubmit(e: Event) {
