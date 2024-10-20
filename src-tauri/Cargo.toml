@@ -19,7 +19,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1.0.64"
 tokio = { version = "1.40.0", features = ["full"] }
-notify = { version = "6.1.1", default-features = false }
+notify = { version = "6.1.1", features = ["macos_fsevent"], default-features = false }
 shellexpand = "3.1.0"
 log = "0.4.22"
 env_logger = "0.11.5"
