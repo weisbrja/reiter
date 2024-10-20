@@ -1,28 +1,28 @@
 import { useState } from "preact/hooks"
 import { useFormErrorContext } from "../components/Popup"
 import { Crawler } from "../App"
+import DropdownSelect from "../components/DropdownSelect"
+import { invoke } from "@tauri-apps/api/core"
+
+export const crawlerTypes = ["kit-ilias-web", "kit-ipd", "ilias-web", "local"]
 
 export default function AddCrawlerForm({ onSubmit }: { onSubmit: (crawler: Crawler) => void }) {
 	const { setError, onCancel } = useFormErrorContext()
+
 	const [name, setName] = useState("")
 	const [target, setTarget] = useState("")
-	const [type, setCrawlerType] = useState("kit-ilias-web")
+	const [type, setCrawlerType] = useState(crawlerTypes[0])
 
 	function handleSubmit(e: Event) {
 		e.preventDefault()
 
 		if (!name) {
-			setError("Name is required")
+			setError("Name is required.")
 			return
 		}
 
 		if (!target) {
-			setError("Target is required")
-			return
-		}
-
-		if (!type) {
-			setError("Crawler type is required")
+			setError("Target is required.")
 			return
 		}
 
@@ -32,7 +32,16 @@ export default function AddCrawlerForm({ onSubmit }: { onSubmit: (crawler: Crawl
 			type,
 			videos: false,
 		}
-		onSubmit(crawler)
+
+		invoke("crawler_exists", { crawlerName: name })
+			.then((crawlerExists) => {
+				if (crawlerExists) {
+					setError("Crawler exists already.")
+				} else {
+					onSubmit(crawler)
+				}
+			})
+			.catch((error) => console.error(error))
 	}
 	return (
 		<form>
@@ -58,17 +67,14 @@ export default function AddCrawlerForm({ onSubmit }: { onSubmit: (crawler: Crawl
 					class="input input-bordered"
 				/>
 				<div class="label">
-					<label class="label-text">Crawler</label>
+					<label class="label-text">Crawler Type</label>
 				</div>
-				<select class="select select-bordered" onInput={(e) => setCrawlerType((e.target as HTMLInputElement).value)}>
-					<option value={"kit-ilias-web"}>kit-ilias-web</option>
-					<option value={"ilias-web"}>ilias-web</option>
-					<option value={"kit-ipd"}>kit-ipd</option>
-					<option value={"local"}>local</option>
-				</select>
+				<div class="mb-4">
+					<DropdownSelect onSelect={setCrawlerType}>{crawlerTypes}</DropdownSelect>
+				</div>
 			</div>
-			<div class="flex justify-end">
-				<button type="button" onClick={onCancel} class="btn btn-error mr-4">
+			<div class="flex justify-end gap-x-4">
+				<button type="button" class="btn btn-secondary" onClick={onCancel}>
 					Cancel
 				</button>
 				<button type="submit" class="btn btn-primary" onClick={handleSubmit}>

@@ -6,18 +6,17 @@ import DefaultView from "./components/views/DefaultView"
 import Sidebar from "./components/Sidebar"
 import SattelLoginHandler, { SattelProvider } from "./components/Sattel"
 import CrawlerView from "./components/views/CrawlerView"
-import { FormErrorContext } from "./components/Popup"
 
-export interface Config {
+export type Config = {
 	settings: Settings
 	crawlers: Crawler[]
 }
 
-export interface Settings {
+export type Settings = {
 	workingDir: string
 }
 
-export interface Crawler {
+export type Crawler = {
 	name: string
 	target: string
 	type: string
@@ -56,13 +55,12 @@ export default function App() {
 
 	return (
 		<SattelProvider>
-			<SattelLoginHandler />
 			<div class="flex">
 				<Sidebar key={configKey} config={config} setCrawlerName={setCrawlerName} />
 				<div class="w-full">
 					{crawlerName !== null ? (
 						<CrawlerView
-							key={configKey}
+							key={configKey + crawlerName}
 							config={config}
 							crawlerName={crawlerName}
 							setCrawlerName={setCrawlerName}
@@ -73,6 +71,7 @@ export default function App() {
 					)}
 				</div>
 			</div>
+			<SattelLoginHandler />
 		</SattelProvider>
 	)
 }

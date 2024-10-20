@@ -45,11 +45,15 @@ impl Settings {
 #[derive(Debug, thiserror::Error, serde::Serialize)]
 pub enum Error {
     #[error("failed parsing config: {0}")]
-    FailedParsing(String),
+    FailedConfigParse(String),
+    #[error("failed writing config: {0}")]
+    FailedConfigWrite(String),
     #[error("config missing attribute: {0}")]
-    MissingAttr(&'static str),
-    #[error("failed saving config: {0}")]
-    SaveError(String),
+    ConfigMissingAttr(&'static str),
+    #[error("crawler does not exist: {0}")]
+    CrawlerDoesNotExist(String),
+    #[error("crawler exists already: {0}")]
+    CrawlerExistsAlready(String),
 }
 
 #[tauri::command]
@@ -59,7 +63,7 @@ pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, Error> {
 
     let mut ini = state.ini.write().unwrap();
     let ini = ini.as_mut().unwrap();
-    ini.load(config_file).map_err(Error::FailedParsing)?;
+    ini.load(config_file).map_err(Error::FailedConfigParse)?;
 
     let working_dir = ini
         .get(Settings::SECTION_NAME, "working_dir")
@@ -79,10 +83,10 @@ pub fn parse_config(state: tauri::State<AppState>) -> Result<Config, Error> {
                 .get("target")
                 .cloned()
                 .flatten()
-                .ok_or(Error::MissingAttr("target"))?;
+                .ok_or(Error::ConfigMissingAttr("target"))?;
             let videos = ini
                 .getboolcoerce(name, "videos")
-                .map_err(Error::FailedParsing)?
+                .map_err(Error::FailedConfigParse)?
                 .unwrap_or(false);
             let name = name[CRAWL_PREFIX.len()..].to_owned();
             Ok(Crawler {
@@ -128,13 +132,13 @@ pub fn save_settings(state: tauri::State<AppState>, settings: Settings) -> Resul
             ini.pretty_writes(&WriteOptions::new_with_params(true, 4, 1))
         ),
     )
-    .map_err(|e| Error::SaveError(e.to_string()))
+    .map_err(|e| Error::FailedConfigWrite(e.to_string()))
 }
 
 #[tauri::command]
 pub fn save_crawler(
     state: tauri::State<AppState>,
-    old_crawler_name: String,
+    old_crawler_name: Option<String>,
     new_crawler: Crawler,
 ) -> Result<(), Error> {
     parse_config(state.clone())?;
@@ -143,16 +147,15 @@ pub fn save_crawler(
     let ini = ini.as_mut().unwrap();
 
     let section = format!("crawl:{}", new_crawler.name);
-    if old_crawler_name != new_crawler.name {
-        let old_section = format!("crawl:{}", old_crawler_name);
-        let map = ini
-            .remove_section(&old_section)
-            .ok_or(Error::SaveError(format!(
-                "crawler {} does not exist",
-                old_crawler_name
-            )))?;
-        for (key, val) in map {
-            ini.set(&section, &key, val);
+    if let Some(old_crawler_name) = old_crawler_name {
+        if old_crawler_name != new_crawler.name {
+            let old_section = format!("crawl:{}", old_crawler_name);
+            let map = ini
+                .remove_section(&old_section)
+                .ok_or(Error::CrawlerDoesNotExist(old_crawler_name))?;
+            for (key, val) in map {
+                ini.set(&section, &key, val);
+            }
         }
     }
     ini.set(&section, "target", Some(new_crawler.target));
@@ -169,7 +172,46 @@ pub fn save_crawler(
             ini.pretty_writes(&WriteOptions::new_with_params(true, 4, 1))
         ),
     )
-    .map_err(|e| Error::SaveError(e.to_string()))
+    .map_err(|e| Error::FailedConfigWrite(e.to_string()))
+}
+
+#[tauri::command]
+pub fn crawler_exists(
+    state: tauri::State<AppState>,
+    crawler_name: String,
+) -> Result<bool, Error> {
+    parse_config(state.clone())?;
+
+    let mut ini = state.ini.write().unwrap();
+    let ini = ini.as_mut().unwrap();
+
+    let section = format!("crawl:{}", crawler_name);
+    Ok(ini.get_map_ref().get(&section).is_some())
+}
+
+#[tauri::command]
+pub fn delete_crawler(state: tauri::State<AppState>, crawler_name: String) -> Result<(), Error> {
+    parse_config(state.clone())?;
+
+    let mut ini = state.ini.write().unwrap();
+    let ini = ini.as_mut().unwrap();
+
+    let section = format!("crawl:{}", crawler_name);
+    ini.remove_section(&section)
+        .ok_or(Error::CrawlerDoesNotExist(crawler_name))?;
+
+    let config_file = state.config_file.read().unwrap();
+    let config_file = config_file.as_ref().unwrap();
+
+    std::fs::write(
+        config_file,
+        format!(
+            "[{}]{LINE_ENDING}{}",
+            Settings::SECTION_NAME,
+            ini.pretty_writes(&WriteOptions::new_with_params(true, 4, 1))
+        ),
+    )
+    .map_err(|e| Error::FailedConfigWrite(e.to_string()))
 }
 
 #[tauri::command]

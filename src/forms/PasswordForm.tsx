@@ -9,7 +9,7 @@ export default function PasswordForm({ onSubmit }: { onSubmit: (password: string
 		e.preventDefault()
 
 		if (!password) {
-			setError("Password required.")
+			setError("Password is required.")
 			return
 		}
 

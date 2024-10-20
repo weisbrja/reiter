@@ -8,12 +8,12 @@ type ProgressBarEvent =
 	| { kind: "setTotal"; total: number }
 	| { kind: "done" }
 
-export interface ProgressBarMsg {
+export type ProgressBarMsg = {
 	id: number
 	event: ProgressBarEvent
 }
 
-export interface ProgressBar {
+export type ProgressBar = {
 	bar: ProgressBarKind
 	progress: number
 	total: number | null

@@ -16,7 +16,7 @@ export function useFormErrorContext() {
 	return context
 }
 
-interface PopupProps {
+type PopupProps = {
 	title: string
 	prevError: string | null
 	onCancel: () => void
@@ -35,8 +35,10 @@ export function Popup({ title, prevError, onCancel, children }: PopupProps) {
 			{children && (
 				<div class="bg-base-300 rounded-lg p-6 w-1/3 min-w-96">
 					<h2 class="text-lg font-bold mb-4">{title}</h2>
-					{error && <p class="text-error mb-2">{error}</p>}
-					<FormErrorContext.Provider value={{ setError, onCancel }}>{children}</FormErrorContext.Provider>
+					<FormErrorContext.Provider value={{ setError, onCancel }}>
+						{error && <p class="text-error mb-2">{error}</p>}
+						{children}
+					</FormErrorContext.Provider>
 				</div>
 			)}
 		</div>

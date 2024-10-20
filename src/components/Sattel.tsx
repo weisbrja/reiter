@@ -9,7 +9,7 @@ import { createContext, JSX } from "preact"
 
 type RequestSubject = "password" | "username"
 
-interface SattelContextType {
+type SattelContextType = {
 	isSattelRunning: boolean
 	currentCrawler: string | undefined
 	finishedProgressBars: Map<number, ProgressBar>
@@ -60,7 +60,6 @@ export function SattelProvider({ children }: { children: JSX.Element | JSX.Eleme
 		setSattelRunning(true)
 		await invoke("ensure_default_config")
 		await invoke("run_sattel", { jsonArgs, progressBarMsgs }).catch((error) => console.error(error))
-		console.info("sattel done")
 		setProgressBarMsgs(new Channel())
 		setFinishedProgressBars(new Map())
 		setRunningProgressBars(new Map())

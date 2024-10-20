@@ -67,6 +67,8 @@ pub fn run() {
             sattel::config::ensure_default_config,
             sattel::config::parse_config,
             sattel::config::save_crawler,
+            sattel::config::delete_crawler,
+            sattel::config::crawler_exists,
             sattel::config::save_settings,
             sattel::config::watch_config
         ])

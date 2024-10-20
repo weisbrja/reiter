@@ -9,7 +9,7 @@ export default function UsernameForm({ onSubmit }: { onSubmit: (username: string
 		e.preventDefault()
 
 		if (!username) {
-			setError("Username required.")
+			setError("Username is required.")
 			return
 		}
 
@@ -31,8 +31,8 @@ export default function UsernameForm({ onSubmit }: { onSubmit: (username: string
 					placeholder="Enter your username"
 				/>
 			</div>
-			<div class="flex justify-end">
-				<button type="button" onClick={onCancel} class="btn btn-error mr-4">
+			<div class="flex justify-end gab-x-4">
+				<button type="button" onClick={onCancel} class="btn btn-secondary">
 					Cancel
 				</button>
 				<button type="submit" class="btn btn-primary">
