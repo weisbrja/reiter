@@ -1,5 +1,0 @@
-{
-	"bundle": {
-		"resources": ["..\\sattel\\dist\\sattel.exe", "..\\sattel\\sattel.cfg"]
-	}
-}
