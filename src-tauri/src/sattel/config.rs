@@ -52,8 +52,6 @@ pub enum Error {
     ConfigMissingAttr(&'static str),
     #[error("crawler does not exist: {0}")]
     CrawlerDoesNotExist(String),
-    #[error("crawler exists already: {0}")]
-    CrawlerExistsAlready(String),
 }
 
 #[tauri::command]
