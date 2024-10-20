@@ -57,7 +57,17 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - name: install sattel
-        run: ./build_sattel.sh
+        run: |
+          git submodule init
+          git submodule update
+          cd sattel
+          uv sync
+          if [ "$RUNNER_OS" = 'Windows' ]; then
+            source .venv/bin/activate
+          else
+            source .venv/Scripts/activate
+          fi
+          ./build.sh
 
       - uses: tauri-apps/tauri-action@v0
         env:
