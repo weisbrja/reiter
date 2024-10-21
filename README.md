@@ -4,7 +4,7 @@ Reiter is a simple GUI for [Pferd](https://github.com/Garmelon/PFERD/).
 
 ## Installation
 
-You can either grab one of the released executables from the [releases](https://github.com/weisbrja/reiter/releases/), or you can compile Reiter yourself by following the instructions below.
+You can either grab one of the executables from the [latest release](https://github.com/weisbrja/reiter/releases/latest), or you can build Reiter yourself by following the instructions below.
 
 ## Development
 
