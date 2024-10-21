@@ -1,3 +1,16 @@
-# reiter
+# Reiter
 
-reiter is a simple gui for [pferd](https://github.com/Garmelon/PFERD/).
+Reiter is a simple GUI for [Pferd](https://github.com/Garmelon/PFERD/).
+
+## Installation
+
+You can either grab one of the released executables from the [releases](https://github.com/weisbrja/reiter/releases/), or you can compile Reiter yourself by following the instructions below.
+
+## Development
+
+To compile Reiter, you first need to install [`Bun`](https://bun.sh) and [`uv`](https://docs.astral.sh/uv/).
+Then you need to setup Tauri and the Rust toolchain by following the instructions provided on the [Tauri website](https://tauri.app/start/prerequisites/).
+
+You now need to build the [Sattel](https://github.com/weisbrja/sattel/) git submodule in this repository by executing the `build_sattel.sh` script.
+
+You can now run Reiter in development mode by executing the `run.sh` script or using `bun run tauri dev`.
