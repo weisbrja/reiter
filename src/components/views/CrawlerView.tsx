@@ -73,21 +73,23 @@ function EditCrawlerViewForm({
 }) {
 	const [error, setError] = useState<string | null>(null)
 
-	const [name, setName] = useState(crawler.name)
-	const [target, setTarget] = useState(crawler.target)
-	const [type, setType] = useState(crawler.type)
+	const [crawlerName, setCrawlerName] = useState(crawler.name)
+	const [crawlerTarget, setCrawlerTarget] = useState(crawler.target)
+	const [crawlerType, setCrawlerType] = useState(crawler.type)
 
 	const openConfirmDeleteDialogRef = useRef<() => void | undefined>()
 
 	function handleSave(e: Event) {
 		e.preventDefault()
 
+		const name = crawlerName.trim()
+
 		if (!name) {
 			setError("Name is required.")
 			return
 		}
 
-		if (!target) {
+		if (!crawlerTarget) {
 			setError("Target is required.")
 			return
 		}
@@ -95,8 +97,8 @@ function EditCrawlerViewForm({
 		onSave({
 			...crawler,
 			name,
-			target,
-			type,
+			target: crawlerTarget,
+			type: crawlerType,
 		})
 	}
 
@@ -115,8 +117,8 @@ function EditCrawlerViewForm({
 					<input
 						type="text"
 						id="name"
-						value={name}
-						onInput={(e) => setName((e.target as HTMLInputElement).value)}
+						value={crawlerName}
+						onInput={(e) => setCrawlerName((e.target as HTMLInputElement).value)}
 						class="input input-bordered"
 					/>
 					<div class="label">
@@ -125,15 +127,15 @@ function EditCrawlerViewForm({
 					<input
 						type="text"
 						id="crawler"
-						value={target}
-						onInput={(e) => setTarget((e.target as HTMLInputElement).value)}
+						value={crawlerTarget}
+						onInput={(e) => setCrawlerTarget((e.target as HTMLInputElement).value)}
 						class="input input-bordered"
 					/>
 					<div class="label">
 						<label class="label-text">Crawler Type</label>
 					</div>
 					<div class="mb-4">
-						<DropdownSelect isDropdown={true} initial={type} onSelect={setType}>
+						<DropdownSelect isDropdown={true} initial={crawlerType} onSelect={setCrawlerType}>
 							{crawlerTypes}
 						</DropdownSelect>
 					</div>
