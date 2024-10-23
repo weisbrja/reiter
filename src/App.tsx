@@ -20,37 +20,54 @@ export type Crawler = {
 	name: string
 	target: string
 	type: string
+	auth: string
 	videos: boolean
+}
+
+async function sleep(ms: number) {
+	return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 export default function App() {
 	const [configKey, setConfigKey] = useState(0)
+	const [watchConfigKey, setWatchConfigKey] = useState(0)
 	const [config, setConfig] = useState<Config | undefined>()
 	const [crawlerName, setCrawlerName] = useState<string | null>(null)
 
 	useEffect(() => {
 		invoke("show_window")
-		parseConfig()
 
+		parseConfig()
 		const configFileChangedUnlisten = listen("configFileChanged", (_) => {
 			parseConfig()
-		})
-
-		invoke("watch_config").catch((_) => {
-			/* already watching config */
 		})
 
 		return () => configFileChangedUnlisten.then((unlisten) => unlisten())
 	}, [])
 
-	function parseConfig() {
-		console.info("parse config")
-		invoke<Config>("parse_config")
-			.then((config) => {
-				setConfig(config)
-				setConfigKey((prevKey) => prevKey + 1)
-			})
-			.catch((error) => console.error(error))
+	useEffect(() => {
+		watchConfig()
+	}, [watchConfigKey])
+
+	async function parseConfig() {
+		try {
+			const config = await invoke<Config>("parse_config")
+			setConfig(config)
+			setConfigKey((prevKey) => prevKey + 1)
+		} catch (error) {
+			console.error(error)
+		}
+	}
+
+	async function watchConfig() {
+		// TODO: apparently watch config never seems to exit, even on directory delete
+		try {
+			await invoke("watch_config")
+		} catch (e) {
+			console.error(e)
+			await sleep(5000)
+			setWatchConfigKey((prevKey) => prevKey + 1)
+		}
 	}
 
 	return (
@@ -64,7 +81,6 @@ export default function App() {
 							config={config}
 							crawlerName={crawlerName}
 							setCrawlerName={setCrawlerName}
-							onBack={() => setCrawlerName(null)}
 						/>
 					) : (
 						<DefaultView key={configKey} config={config} />

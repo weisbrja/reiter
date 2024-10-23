@@ -1,27 +1,28 @@
-import { useState } from "preact/hooks"
-import AddCrawlerForm from "../forms/AddCrawlerForm"
-import { Popup } from "../components/Popup"
-import { Crawler } from "../App"
+import { useRef } from "preact/hooks"
 import { invoke } from "@tauri-apps/api/core"
+import { Crawler } from "../App"
+import AddCrawlerDialog from "../dialogs/AddCrawlerDialog"
 
 export default function AddCrawlerButton() {
-	const [showForm, setShowForm] = useState(false)
+	const openAddCrawlerDialogRef = useRef<() => void | undefined>()
 
-	function handleSubmit(newCrawler: Crawler) {
+	function handleSave(newCrawler: Crawler) {
 		invoke("save_crawler", { oldCrawlerName: undefined, newCrawler }).catch((error) => console.error(error))
-		setShowForm(false)
+	}
+
+	function handleAdd() {
+		openAddCrawlerDialogRef.current?.()
 	}
 
 	return (
 		<div class="w-full p-2">
-			<button type="button" class="w-full btn btn-success" onClick={() => setShowForm(true)}>
+			<button type="button" class="w-full btn btn-success" onClick={handleAdd}>
 				+
 			</button>
-			{showForm && (
-				<Popup title="Add Crawler" prevError={""} onCancel={() => setShowForm(false)}>
-					<AddCrawlerForm onSubmit={(newCrawler) => handleSubmit(newCrawler)} />
-				</Popup>
-			)}
+			<AddCrawlerDialog
+				onSave={handleSave}
+				setOpenDialogRef={(openDialog) => (openAddCrawlerDialogRef.current = openDialog)}
+			/>
 		</div>
 	)
 }

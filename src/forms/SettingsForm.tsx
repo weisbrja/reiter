@@ -18,26 +18,24 @@ export default function SettingsForm({
 	}
 
 	return (
-		<>
-			<form onSubmit={handleSubmit}>
-				<div class="form-control mb-4">
-					<div class="label">
-						<label class="label-text">Working directory</label>
-					</div>
-					<input
-						type="text"
-						id="workingDir"
-						value={workingDir}
-						onInput={(e) => setWorkingDir((e.target as HTMLInputElement).value)}
-						class="input input-bordered"
-					/>
+		<form onSubmit={handleSubmit}>
+			<div class="form-control mb-4">
+				<div class="label">
+					<label class="label-text">Working directory</label>
 				</div>
-				<div class="flex justify-end">
-					<button type="submit" class="btn btn-primary">
-						Save
-					</button>
-				</div>
-			</form>
-		</>
+				<input
+					type="text"
+					id="workingDir"
+					value={workingDir}
+					onInput={(e) => setWorkingDir((e.target as HTMLInputElement).value)}
+					class="input input-bordered"
+				/>
+			</div>
+			<div class="flex justify-end">
+				<button type="submit" class="btn btn-primary">
+					Save
+				</button>
+			</div>
+		</form>
 	)
 }

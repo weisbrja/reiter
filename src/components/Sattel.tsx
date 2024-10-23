@@ -1,10 +1,9 @@
-import { useContext, useEffect, useState } from "preact/hooks"
+import { useContext, useEffect, useRef, useState } from "preact/hooks"
 import { Channel, invoke } from "@tauri-apps/api/core"
 import { listen, emit } from "@tauri-apps/api/event"
 import { ProgressBar, ProgressBarMsg } from "./ProgressBars"
-import { Popup } from "./Popup"
-import UsernameForm from "../forms/UsernameForm"
-import PasswordForm from "../forms/PasswordForm"
+import UsernameDialog from "../dialogs/UsernameDialog"
+import PasswordDialog from "../dialogs/PasswordDialog"
 import { createContext, JSX } from "preact"
 
 type RequestSubject = "password" | "username"
@@ -58,8 +57,11 @@ export function SattelProvider({ children }: { children: JSX.Element | JSX.Eleme
 
 	async function runSattel(jsonArgs: string) {
 		setSattelRunning(true)
-		await invoke("ensure_default_config")
-		await invoke("run_sattel", { jsonArgs, progressBarMsgs }).catch((error) => console.error(error))
+		try {
+			await invoke("run_sattel", { jsonArgs, progressBarMsgs })
+		} catch (error) {
+			console.error(error)
+		}
 		setProgressBarMsgs(new Channel())
 		setFinishedProgressBars(new Map())
 		setRunningProgressBars(new Map())
@@ -146,10 +148,12 @@ export function SattelProvider({ children }: { children: JSX.Element | JSX.Eleme
 }
 
 export default function SattelLoginHandler() {
-	const [openLoginForm, setOpenLoginForm] = useState<RequestSubject | null>(null)
 	const [loginFailed, setLoginFailed] = useState(false)
 
-	const { cancelSattel: stopSattel } = useSattelContext()
+	const { cancelSattel } = useSattelContext()
+
+	const openUsernameDialogRef = useRef<() => void | undefined>()
+	const openPasswordDialogRef = useRef<() => void | undefined>()
 
 	useEffect(() => {
 		const loginFailedUnlisten = listen("loginFailed", (_) => {
@@ -157,7 +161,14 @@ export default function SattelLoginHandler() {
 		})
 
 		const requestUnlisten = listen<RequestSubject>("request", (event) => {
-			setOpenLoginForm(event.payload)
+			switch (event.payload) {
+				case "username":
+					openUsernameDialogRef.current?.()
+					break
+				case "password":
+					openPasswordDialogRef.current?.()
+					break
+			}
 		})
 
 		return () => {
@@ -168,34 +179,29 @@ export default function SattelLoginHandler() {
 
 	return (
 		<>
-			{openLoginForm && (
-				<Popup
-					title="Login"
-					prevError={loginFailed ? "Login failed. Please reenter credentials." : null}
-					onCancel={() => {
-						setOpenLoginForm(null)
-						stopSattel()
-					}}
-				>
-					{openLoginForm === "username" ? (
-						<UsernameForm
-							onSubmit={(username) => {
-								emit("response", username)
-								setOpenLoginForm(null)
-								setLoginFailed(false)
-							}}
-						/>
-					) : (
-						<PasswordForm
-							onSubmit={(password) => {
-								emit("response", password)
-								setOpenLoginForm(null)
-								setLoginFailed(false)
-							}}
-						/>
-					)}
-				</Popup>
-			)}
+			<UsernameDialog
+				loginFailed={loginFailed}
+				onConfirm={(username) => {
+					emit("response", username)
+					setLoginFailed(false)
+				}}
+				onCancel={() => {
+					cancelSattel()
+					setLoginFailed(false)
+				}}
+				setOpenDialogRef={(openDialog) => (openUsernameDialogRef.current = openDialog)}
+			/>
+			<PasswordDialog
+				onConfirm={(password) => {
+					emit("response", password)
+					setLoginFailed(false)
+				}}
+				onCancel={() => {
+					cancelSattel()
+					setLoginFailed(false)
+				}}
+				setOpenDialogRef={(openDialog) => (openPasswordDialogRef.current = openDialog)}
+			/>
 		</>
 	)
 }

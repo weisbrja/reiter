@@ -14,8 +14,8 @@ struct AppState {
     sattel_exe: RwLock<Option<Box<Path>>>,
     config_file: RwLock<Option<Box<Path>>>,
     config_dir: RwLock<Option<Box<Path>>>,
-    ini: RwLock<Option<Ini>>,
     watching_config: AtomicBool,
+    ini: RwLock<Option<Ini>>,
 }
 
 #[tauri::command]
@@ -36,8 +36,8 @@ pub fn run() {
             sattel_exe: None.into(),
             config_file: None.into(),
             config_dir: None.into(),
-            ini: None.into(),
             watching_config: false.into(),
+            ini: None.into(),
         })
         .setup(|app| {
             let sattel = app
@@ -55,7 +55,7 @@ pub fn run() {
 
             let mut defaults = IniDefault::default();
             defaults.case_sensitive = true;
-            defaults.default_section = Settings::SECTION_NAME.to_owned();
+            Settings::SECTION_NAME.clone_into(&mut defaults.default_section);
             let ini = Ini::new_from_defaults(defaults);
             *state.ini.write().unwrap() = Some(ini);
 
@@ -64,7 +64,6 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             show_window,
             sattel::run_sattel,
-            sattel::config::ensure_default_config,
             sattel::config::parse_config,
             sattel::config::save_crawler,
             sattel::config::delete_crawler,

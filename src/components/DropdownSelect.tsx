@@ -1,13 +1,17 @@
 import { useEffect, useState } from "preact/hooks"
 
 export default function DropdownSelect({
+	initial,
 	onSelect,
 	children,
+	isDropdown,
 }: {
+	initial: string
 	onSelect: (selected: string) => void
 	children: string[]
+	isDropdown: boolean
 }) {
-	const [selected, setSelected] = useState(children[0])
+	const [selected, setSelected] = useState(initial)
 	const [isDropdownOpen, setDropdownOpen] = useState(false)
 
 	function closeDropdown() {
@@ -21,7 +25,7 @@ export default function DropdownSelect({
 	function handleSelect(selected: string) {
 		setSelected(selected)
 		onSelect(selected)
-		toggleDropdown()
+		closeDropdown()
 	}
 
 	useEffect(() => {
@@ -47,7 +51,7 @@ export default function DropdownSelect({
 				</svg>
 			</div>
 			{isDropdownOpen && (
-				<ul class="absolute mt-2 w-full rounded-box bg-base-200 z-10">
+				<ul class={`absolute mt-2 w-full rounded-box bg-base-200 z-100 ${isDropdown ? "mt-2" : "bottom-full mb-2"}`}>
 					<div class="mt-2 mb-2">
 						{children.map((child, index) => (
 							<li key={index} tabIndex={0} onClick={() => handleSelect(child)}>
